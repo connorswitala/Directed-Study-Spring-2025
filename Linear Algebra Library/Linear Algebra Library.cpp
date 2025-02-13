@@ -4,6 +4,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "LinearAlgebra.h"
+#include <omp.h>
 
 // Creates a matrix filled with zeros
 Matrix zeros(int rows, int cols) {
@@ -29,7 +30,17 @@ Matrix identity(int size) {
     return I;
 }
 
-// This function create a matrix full of random variables.
+// This function creates a vector full of random variables.
+Vector random(int n) { 
+    Vector result(n, 0.0);
+
+    for (int j = 0; j < n; ++j) {
+        result[j] = rand(); 
+    }
+    return result;
+}
+
+// This function creates a matrix full of random variables.
 Matrix random(int rows, int cols) {
     Matrix result(rows, Vector(cols, 0.0));
 
@@ -40,6 +51,44 @@ Matrix random(int rows, int cols) {
     }
 
     return result;
+}
+
+// This function creates a tensor full of random variables.
+Tensor random(int n, int rows, int cols) { 
+    Tensor result(rows, Matrix(cols, Vector(n, 0.0))); 
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            for (int k = 0; k < n; ++k) {
+                result[i][j][k] = rand(); 
+            }
+        }
+    }
+
+    return result; 
+}
+
+// This function creates a tensor full of random variables.
+Tesseract random(int rows, int cols, int p, int q) {
+    Tesseract result(rows, Tensor(cols, Matrix(p, Vector(q, 0.0))); 
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            for (int k = 0; k < p; ++k) {
+                for (int l = 0; l < q; ++l) {
+                    result[i][j][k][l] = rand(); 
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+void displayVector(const Vector& A) {
+        for (int j = 0; j < A.size(); ++j) {
+            cout << A[j] << " "; 
+        }
 }
 
 // Print normal Matrices;
@@ -146,7 +195,6 @@ Matrix operator*(const Matrix& A, const Matrix& B) {
     }
 
     Matrix result(Arows, vector<double>(Bcols, 0.0));
-
     for (int i = 0; i < Arows; ++i) {
         for (int j = 0; j < Bcols; ++j) {
             for (int k = 0; k < Acols; ++k) {
@@ -234,6 +282,39 @@ Matrix operator^(const Matrix& A, const int s) {
         }    
     }    
     return result; 
+}
+
+Vector operator*(const Matrix& A, const Vector& B) {
+    int Arows = A.size();
+    int Acols = A[0].size();
+    int Brows = B.size();
+    int Bcols = 1;
+
+    if (Acols != Brows) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication.");
+    }
+
+    Vector result(B.size());
+
+    for (int i = 0; i < Arows; ++i) {
+        for (int k = 0; k < Acols; ++k) {
+            result[i] += A[i][k] * B[k];
+        }
+    }
+
+    return result;
+}
+
+Vector operator+(const Vector& v1, const Vector& v2) {
+    if (v1.size() != v2.size()) {
+        throw invalid_argument("Vectors must be the same size");
+    }
+
+    Vector result(v1.size());
+    for (size_t i = 0; i < v1.size(); i++) {
+        result[i] = v1[i] + v2[i];
+    }
+    return result;
 }
 
 

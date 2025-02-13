@@ -8,9 +8,13 @@
 
 using namespace std;
 
-typedef vector<vector<vector<double>>> Tensor;
-typedef vector<vector<double>> Matrix;
-typedef vector<double> Vector;
+typedef vector<double> Vector; 
+typedef vector<Vector> Matrix;
+typedef vector<Matrix> Tensor;
+typedef vector<Tensor> Tesseract;   
+
+Vector operator+(const Vector& v1, const Vector& v2);  
+Vector operator*(const Matrix& A, const Vector& B); 
 
 Matrix operator*(const Matrix& A, const Matrix& B);
 Matrix operator+(const Matrix& A, const Matrix& B);
@@ -19,13 +23,17 @@ Matrix operator*(const double& s, const Matrix& B);
 Matrix operator*(const Matrix& B, const double& s);
 Matrix operator^(const Matrix& A, const int s);   
 
+void displayVector(const Vector& A); 
 void displayMatrix(const Matrix& A);
 
 Matrix zeros(int rows, int cols);
 Matrix ones(int rows, int cols);
 Matrix identity(int size);
 Matrix column_vector(int size);
+Vector random(int n); 
 Matrix random(int rows, int cols);
+Tensor random(int n, int rows, int cols);
+
 
 
 void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U);

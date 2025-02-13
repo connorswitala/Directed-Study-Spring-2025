@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\frodo\source\repos\connorswitala\Directed-Study-Spring-2025\GridGenerator;C:\Users\frodo\source\repos\connorswitala\Directed-Study-Spring-2025\Linear Algebra Library;C:\Users\frodo\source\repos\connorswitala\Directed-Study-Spring-2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>

@@ -11,8 +11,8 @@ int main() {
 	auto start1 = chrono::high_resolution_clock::now(); // Start the timer  
 	cout << "DPLR Running" << endl << "--------------------------" << endl;
 
-	int Nx = 50;
-	int Ny = 25; 
+	int Nx = 100;
+	int Ny = 50; 
 	int Ramp_Angle = 15;
 
 	RampGrid grid(Nx, Ny, 10, 10, 10, 7.5, Ramp_Angle);
@@ -27,6 +27,7 @@ int main() {
 	double M = 2.5;
 	double P = 10000;
 	double T = 300;
+
 	double R = 287;
 	double a = sqrt(gamma * R * T);
 	double rho = P / (R * T); 
