@@ -4,16 +4,41 @@
 #include "pch.h"
 #include "framework.h"
 #include "LinearAlgebra.h"
-#include <omp.h>
+
+void printMemoryUsage() {
+    PROCESS_MEMORY_COUNTERS memInfo;
+    GetProcessMemoryInfo(GetCurrentProcess(), &memInfo, sizeof(memInfo));
+    std::cout << " Max memory used: " << memInfo.PeakWorkingSetSize / (1024 * 1024) << " MB" << std::endl;
+}
+
+
+Vector zeros(int n) {
+    return Vector(n, 0.0); 
+}
 
 // Creates a matrix filled with zeros
 Matrix zeros(int rows, int cols) {
     return Matrix(rows, Vector(cols, 0.0));
 }
 
+// This function creates a vector full of ones.
+Vector ones(int n) {
+    return Vector(n, 1.0);
+}
+
 // Creates a matrix filled with ones
 Matrix ones(int rows, int cols) {
     return Matrix(rows, Vector(cols, 1.0));
+}
+
+// This function creates a tensor full of ones.
+Tensor ones(int rows, int cols, int n) {
+    return Tensor(rows, Matrix(cols, Vector(n, 1.0)));
+}
+
+// This function creates a tesseract full of ones.
+Tesseract ones(int rows, int cols, int p, int q) {
+    return Tesseract(rows, Tensor(cols, Matrix(p, Vector(q, 1.0))));
 }
 
 // Creates a column vector of ones of given size
@@ -54,7 +79,7 @@ Matrix random(int rows, int cols) {
 }
 
 // This function creates a tensor full of random variables.
-Tensor random(int n, int rows, int cols) { 
+Tensor random(int rows, int cols, int n) { 
     Tensor result(rows, Matrix(cols, Vector(n, 0.0))); 
 
     for (int i = 0; i < rows; ++i) {
@@ -70,7 +95,7 @@ Tensor random(int n, int rows, int cols) {
 
 // This function creates a tensor full of random variables.
 Tesseract random(int rows, int cols, int p, int q) {
-    Tesseract result(rows, Tensor(cols, Matrix(p, Vector(q, 0.0))); 
+    Tesseract result(rows, Tensor(cols, Matrix(p, Vector(q, 0.0)))); 
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
@@ -100,6 +125,21 @@ void displayMatrix(const Matrix& A) {
         cout << endl;
     }
 }
+
+bool NanorInf(const Tensor& U) { 
+    for (int i = 0; i < U.size(); ++i) { 
+        for (int j = 0; j < U[0].size(); ++j) { 
+            for (int k = 0; k < U[0][0].size(); ++k) {  
+                if (isnan(U[i][j][k]) || isinf(U[i][j][k])) {                  
+                    return true; 
+                }                
+            }
+        }
+    }    
+    return false; 
+}
+
+////// Matrix - Matrix LU division
 
 // Performs LU decomposition: A = LU
 void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U) {
@@ -181,6 +221,68 @@ Matrix operator/(const Matrix& B, const Matrix& A) {
     LUDecomposition(A, L, U);
     Matrix Y = forwardSubstitution(L, B);
     return backwardSubstitution(U, Y);
+}
+
+
+///// Matrix - Vector LU division
+
+// Solves Ly = B using forward substitution
+Vector forwardSubstitution(const Matrix& L, const Vector& B) {
+    int n = L.size();
+    Vector Y(n, 0.0);
+
+    for (int i = 0; i < n; i++) {
+        Y[i] = B[i];
+        for (int j = 0; j < i; j++) {
+            Y[i] -= L[i][j] * Y[j];
+        }
+    }
+    return Y;
+}
+
+// Solves Ux = Y using backward substitution
+Vector backwardSubstitution(const Matrix& U, const Vector& Y) {
+    int n = U.size();
+    Vector X(n, 0.0);
+
+    for (int i = n - 1; i >= 0; i--) {
+        if (U[i][i] == 0.0) {
+            throw std::runtime_error("Singular matrix detected in back-substitution.");
+        }
+        X[i] = Y[i];
+        for (int j = i + 1; j < n; j++) {
+            X[i] -= U[i][j] * X[j];
+        }
+        X[i] /= U[i][i];
+    }
+    return X;
+}
+
+// Solves AX = B using LU decomposition (overloaded operator)
+Vector operator/(const Vector& B, const Matrix& A) { 
+    int n = A.size();
+    if (B.size() != n) {
+        throw std::invalid_argument("Matrix and vector dimensions do not match for solving Ax = B.");
+    }
+    Matrix L, U;
+    LUDecomposition(A, L, U);
+    Vector Y = forwardSubstitution(L, B);
+    return backwardSubstitution(U, Y);
+}
+
+Tensor operator+(const Tensor& A, const Tensor& B) {
+
+    Tensor result(A.size(), Matrix(A[0].size(), Vector(A[0][0].size()))); 
+
+    for (int i = 0; i < A.size(); ++i) {
+        for (int j = 0; j < A[0].size(); ++j) {
+            for (int k = 0; k < A[0][0].size(); ++k) {
+                result[i][j][k] = A[i][j][k] + B[i][j][k];
+            }
+        }
+    }
+
+    return result; 
 }
 
 // Defines operator for matrix multiplication
@@ -272,6 +374,21 @@ Matrix operator*(const Matrix& B, const double& s) {
     return s * B;
 }
 
+Vector operator*(const Vector& A, const double& s) {
+    int n = A.size(); 
+    Vector result(n, 0.0); 
+  
+    for (int i = 0; i < n; ++i) { 
+            result[i] = s * A[i]; // Perform scalar multiplication
+    }
+
+    return result;
+}
+
+Vector operator*(const double& s, const Vector& A) {
+    return A * s; 
+}
+
 Matrix operator^(const Matrix& A, const int s) {
     Matrix result(A.size(), Vector(A[0].size()));
     for (int k = 0; k < s; ++k) {
@@ -314,6 +431,27 @@ Vector operator+(const Vector& v1, const Vector& v2) {
     for (size_t i = 0; i < v1.size(); i++) {
         result[i] = v1[i] + v2[i];
     }
+    return result;
+}
+
+Vector operator-(const Vector& v1, const Vector& v2) {
+    if (v1.size() != v2.size()) { 
+        throw invalid_argument("Vectors must be the same size"); 
+    } 
+
+    Vector result(v1.size()); 
+    for (size_t i = 0; i < v1.size(); i++) { 
+        result[i] = v1[i] - v2[i]; 
+    }
+    return result; 
+}
+
+Vector operator/(const Vector& v1, const double& s) {
+    Vector result(v1.size()); 
+    for (size_t i = 0; i < v1.size(); i++) { 
+        result[i] = v1[i]/s ;
+    }
+
     return result;
 }
 

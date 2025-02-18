@@ -5,8 +5,16 @@
 #include <cassert>
 #include <cstdlib>
 #include <stdexcept>  // For exception handling
+#include <Windows.h>
+#include <Psapi.h>
+#include <chrono>
+#include <unordered_map>
+#include <string>
 
 using namespace std;
+
+void printMemoryUsage(); 
+
 
 typedef vector<double> Vector; 
 typedef vector<Vector> Matrix;
@@ -15,6 +23,10 @@ typedef vector<Tensor> Tesseract;
 
 Vector operator+(const Vector& v1, const Vector& v2);  
 Vector operator*(const Matrix& A, const Vector& B); 
+Vector operator*(const Vector& A, const double& s);
+Vector operator*(const double& s, const Vector& A);
+Vector operator-(const Vector& v1, const Vector& v2);
+Vector operator/(const Vector& v1, const double& s);
 
 Matrix operator*(const Matrix& A, const Matrix& B);
 Matrix operator+(const Matrix& A, const Matrix& B);
@@ -23,23 +35,37 @@ Matrix operator*(const double& s, const Matrix& B);
 Matrix operator*(const Matrix& B, const double& s);
 Matrix operator^(const Matrix& A, const int s);   
 
+Tensor operator+(const Tensor& A, const Tensor& B);  
+
 void displayVector(const Vector& A); 
 void displayMatrix(const Matrix& A);
 
-Matrix zeros(int rows, int cols);
+Vector ones(int n);
 Matrix ones(int rows, int cols);
+Tensor ones(int rows, int cols, int n);
+Tesseract ones(int rows, int cols, int p, int q);
+
+Vector random(int n);
+Matrix random(int rows, int cols);
+Tensor random(int rows, int cols, int n);
+Tesseract random(int rows, int cols, int p, int q);
+
+bool NanorInf(const Tensor& U); 
+
+Vector zeros(int n);
+Matrix zeros(int rows, int cols);
 Matrix identity(int size);
 Matrix column_vector(int size);
-Vector random(int n); 
-Matrix random(int rows, int cols);
-Tensor random(int n, int rows, int cols);
-
-
 
 void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U);
 Matrix forwardSubstitution(const Matrix& L, const Matrix& b);
 Matrix backwardSubstitution(const Matrix& U, const Matrix& y);
 Matrix operator/(const Matrix& b, const Matrix& A);
+
+
+Vector forwardSubstitution(const Matrix& L, const Vector& B);
+Vector backwardSubstitution(const Matrix& U, const Vector& Y); 
+Vector operator/(const Vector& B, const Matrix& A); 
 
 class Matrix1D {
 private:

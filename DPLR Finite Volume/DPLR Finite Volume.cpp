@@ -1,92 +1,82 @@
-// DPLR Finite Volume.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <cassert>
+#include <cstdlib>
+#include <fstream> 
+#include "GridGenerator.h" 
+#include "2DFVSLibrary.h" 
 #include "LinearAlgebra.h"
-#include "GridGenerator.h"
-#include "2DFVSLibrary.h"
-#include <chrono>
+#include <omp.h> 
 
+using namespace std;
+
+
+#define TIME chrono::high_resolution_clock::now(); 
+#define DURATION chrono::duration<double> duration;   
 
 int main() {
-	auto start1 = chrono::high_resolution_clock::now(); // Start the timer  
-	cout << "DPLR Running" << endl << "--------------------------" << endl;
 
-	int Nx = 100;
-	int Ny = 50; 
-	int Ramp_Angle = 15;
 
-	RampGrid grid(Nx, Ny, 10, 10, 10, 7.5, Ramp_Angle);
+	cout << "Running DPLR Finite Volume..." << endl;
 
-	string filename = "Inviscid_Ramp_DPLR.vtk"; 
+	auto start = TIME;
 
-	BoundaryCondition leftBoundary = BoundaryCondition::Inlet;
-	BoundaryCondition rightBoundary = BoundaryCondition::Outlet;
-	BoundaryCondition bottomBoundary = BoundaryCondition::Symmetry;
-	BoundaryCondition topBoundary = BoundaryCondition::Symmetry;
+	int Nx = 400, Ny = 200, n = 4, counter = 0;
+	double CFL = 1.0, dt;
 
-	double M = 2.5;
-	double P = 10000;
-	double T = 300;
+	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T);
 
-	double R = 287;
-	double a = sqrt(gamma * R * T);
-	double rho = P / (R * T); 
-	double u = M * a;
-	double v = 0;
-	double CFL = 1.0;
+	Vector V_inlet = { rho, u, v, p };
+	Vector U_inlet = primtoCons(V_inlet);
 
-	Matrix V_inlet = { {rho}, {u}, {v}, {P} };
-	Matrix U_inlet = primtoCons(V_inlet);
-
-	Matrix2D U(4, Nx, Ny), U_old(4, Nx, Ny), dU(4, Nx, Ny), dU_new(4, Nx, Ny), dU_old(4, Nx, Ny);
+	Tensor U(Nx, Matrix(Ny, Vector(n, 0.0)));
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {
-			U.vars(i, j) = U_inlet; 
+			U[i][j] = U_inlet;
 		}
 	}
 
-	double outer_residual = 1.0;
-	int n = 1;
-	double t_old = 0.0;
-	Vector t;
-	double t0 = 0.0;
-	t.push_back(t0);  
+	Tensor dU_new(Nx, Matrix(Ny, Vector(n, 0.0)));
+	Tensor dU_old(Nx, Matrix(Ny, Vector(n, 0.0)));
 
-	double dt; 
+	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);
 
-	while (outer_residual >= 1e-6) {
+	RampGrid grid(Nx, Ny, 10, 10, 10, 10, 15);
 
-		dt = calculate_dt(U, grid, Nx, Ny, CFL); 
-		dU_old = dU;
-		U_old = U;
+	Tensor i_Fluxes(Nx + 1, Matrix(Ny, Vector(n))), j_Fluxes(Nx, Matrix(Ny + 1, Vector(n)));
 
-		dU = solveOneTimestep(U, dU_old, U_inlet, grid, dt, Nx, Ny, leftBoundary, rightBoundary, bottomBoundary, topBoundary);
-		dU.NanorInf(); 
+	Tesseract i_plus_Jacobians(Nx + 1, Tensor(Ny, Matrix(n, Vector(n)))), i_minus_Jacobians(Nx + 1, Tensor(Ny, Matrix(n, Vector(n)))),
+		j_plus_Jacobians(Nx, Tensor(Ny + 1, Matrix(n, Vector(n)))), j_minus_Jacobians(Nx, Tensor(Ny + 1, Matrix(n, Vector(n))));
 
-		U += dU; 
+	double outer_residual = 10.0;
 
-		t.push_back(t.back() + dt); 
-		outer_residual = calculateResidual(U, grid, Nx, Ny);
-		
-		if (n % 20 == 0) {
-			auto end1 = chrono::high_resolution_clock::now(); // Stop the timer 
-			chrono::duration<double> duration1 = end1 - start1; // Calculate the duration 
-			cout << "Iteration " << n << ":\t Residual = " << outer_residual << "\t dt = " << dt << "\t Elapsed time = " << duration1.count() << endl;  
-			writeVTK(filename, U, grid, Nx, Ny); 
-		}		
-		n++; 		
+	while (outer_residual >= 1e-8) {
+
+
+		solveOneTimestep(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx, Ny, dt, CFL,
+			i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+
+		outer_residual = calculateResidual(U, grid, Nx, Ny, i_Fluxes, j_Fluxes);
+		if (counter == 0) outer_residual = 1;
+
+		if (counter % 50 == 0) {
+			auto end = TIME;
+			DURATION duration = end - start;
+			cout << "Iteration: " << counter << "\t Residual: " << outer_residual << "\t Elapsed time: " << duration.count() << endl;
+		}
+		counter++;
 	}
 
-	writeVTK(filename, U, grid, Nx, Ny); 
+	auto end = TIME;
+	DURATION duration = end - start;
+	cout << "Entire program took " << duration.count() << "seconds." << endl;
 
-	cout << endl;
-	auto end1 = chrono::high_resolution_clock::now(); // Stop the timer 
-	chrono::duration<double> duration1 = end1 - start1; // Calculate the duration 
-	cout << "DPLR took " << duration1.count() << " seconds to complete." << endl;
+	writeVTK("2DRamp.csv", U, grid, Nx, Ny);
+	writeCSV("1DRamp.csv", U, grid, 0, Nx);
+
+	printMemoryUsage();
 
 	return 0;
-
-
 }
-

@@ -5,36 +5,58 @@
 #include <cassert>
 #include <cstdlib>
 #include <fstream> 
-#include <chrono>
+#include "GridGenerator.h" 
+#include "2DFVSLibrary.h" 
 #include "LinearAlgebra.h"
-#include "2DFVSLibrary.h"
-#include "GridGenerator.h"
+#include <omp.h> 
+#include <array> 
 
 using namespace std;
 
 
+
+#define TIME chrono::high_resolution_clock::now(); 
+#define DURATION chrono::duration<double> duration;   
+// Function to multiply a fixed-size 2D array by a 1D array
+
+array<double, 3> operator*(const array<array<double, 3>, 3>& A, const array<double, 3>& x) {
+    array<double, 3> result = { 0, 0, 0 }; 
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            result[i] += A[i][j] * x[j];
+        }
+    }
+    return result;
+}
+
 int main() {
+    array<array<double, 3>, 3> A = { {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}} };
+    array<double, 3> x = { 1, 2, 3 };
+    array<double, 3> result;
 
-	int n = 4, Nx = 5, Ny = 5;
-	RampGrid grid(100, 100, 1, 1, 1, 0.75, 10); 
+    auto start = TIME;  
+    for (int i = 0; i < 100000; ++i) {
+       result = A * x; // Uses overloaded operator*
+    }
+    auto end = TIME;
 
-	auto start1 = chrono::high_resolution_clock::now(); 
- 
-	Tensor U = randomTensor(n, Nx, Ny);
-	Tesseract
-	Vector VL{ 0.15, 1.00, 0.00, 0.3 };
-	Vector VR = { 0.02, 0.3, 0.00, 0.15 };
+    DURATION duration = end - start;
+    cout << duration.count() << endl; 
 
-	Vector UL = primtoCons(VL);
-	Vector UR = primtoCons(VR);
 
-    U[0][0] = A_Plus(UL, grid.RNorms(0, 0)) * UL + A_Minus(UR, grid.RNorms(0, 0)) * UR;
+    Matrix B = random(3, 3);
+    Vector C = random(3); 
+    Vector D(3);
 
-	displayVector(U[0][0]);
+    start = TIME;
+    for (int i = 0; i < 100000; ++i) {
+        D = B * C;
+    }
+    end = TIME;
 
-	auto end1 = chrono::high_resolution_clock::now();
-	chrono::duration<double> duration1 = end1 - start1;
+    duration = end - start;
+    cout << duration.count() << endl;
 
-	cout << endl << duration1.count(); 
-	return 0;
-} 
+    return 0;
+}
