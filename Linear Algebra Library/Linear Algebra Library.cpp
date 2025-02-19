@@ -86,6 +86,14 @@ Vector operator+(const Vector& v1, const Vector& v2) {
     return result;
 }
 
+double operator*(const Vector& A, const Vector& B) {
+    double result = 0.0;
+    for (int i = 0; i < 4; i++) {
+        result += A[i] * B[i];
+    }
+    return result;
+}
+
 Vector operator-(const Vector& v1, const Vector& v2) { 
 
     Vector result; 

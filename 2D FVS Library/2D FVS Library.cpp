@@ -4,7 +4,6 @@
 #include "pch.h"
 #include "framework.h"
 #include "2DFVSLibrary.h"
-#include <chrono>
 
 
 
@@ -156,9 +155,14 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 	while (inner_residual >= 1e-8) {		
 
+		//auto start = TIME;
 		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+		//auto end = TIME;
+		//DURATION duration = end - start;
+		//cout << "Calculate Jacobians took: " << duration.count() << " seconds." << endl; 
 
 		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+
 
 		for (int i = 1; i < Nx - 1; ++i) {
 			solveMiddleLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, i, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
@@ -166,8 +170,11 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 		solveRightLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx - 1, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
+		//start = TIME; 
 		inner_residual = calculateInnerResidual(U, dU_new, dU_old, grid, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians); 
-	
+		//end = TIME; 
+		//duration = end - start; 
+		//cout << "Inner Residual took: " << duration.count() << " seconds." << endl << "Inner Residual: " << inner_residual << endl; 
 		dU_old = dU_new;
 	}
 
@@ -556,6 +563,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		}
 	}
 
+
 	// Inner j-faces 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 1; j < Ny; ++j) {
@@ -911,37 +919,38 @@ double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_
 	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 	//
 	double inner_residual = 0.0;
-	Vector res;
+	double res = 0.0; 
 
-	Matrix A; // Relates to U(j+1) 
-	Matrix B; // Relates to U(j) 
-	Matrix C; // Relates to U(j-1) 
-	Vector F; // Right hand side  
+	static Vector A; // Relates to U(j+1) 
+	static Vector B; // Relates to U(j) 
+	static Vector C; // Relates to U(j-1) 
+	static double F; // Right hand side  
 
+	Vector one = { 1, 0, 0, 0 };
 
 	// Middle Boundary
 	for (int i = 1; i < Nx - 1; ++i) {
 		for (int j = 1; j < Ny - 1; ++j) {
 
-			B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1));
+			B = j_minus_Jacobians[i][j + 1][0] * (grid.jArea(i, j + 1)); 
 
-			A = grid.Volume(i, j) / dt * identity()
-				- i_minus_Jacobians[i][j] * grid.iArea(i, j)
-				+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)
-				- j_minus_Jacobians[i][j] * grid.jArea(i, j)
-				+ j_plus_Jacobians[i][j + 1] * grid.jArea(i, j + 1);
+			A = grid.Volume(i, j) / dt * one 
+				- i_minus_Jacobians[i][j][0] * grid.iArea(i, j) 
+				+ i_plus_Jacobians[i + 1][j][0] * grid.iArea(i + 1, j)
+				- j_minus_Jacobians[i][j][0] * grid.jArea(i, j) 
+				+ j_plus_Jacobians[i][j + 1][0] * grid.jArea(i, j + 1);
 
-			C = j_plus_Jacobians[i][j] * (-grid.jArea(i, j));
+			C = j_plus_Jacobians[i][j][0] * (-grid.jArea(i, j)); 
 
-			F = i_Fluxes[i][j] * (grid.iArea(i, j))
-				+ i_Fluxes[i + 1][j] * (-grid.iArea(i + 1, j))
-				+ j_Fluxes[i][j] * (grid.jArea(i, j))
-				+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1))
-				+ i_plus_Jacobians[i][j] * (grid.iArea(i, j)) * dU_old[i - 1][j]
-				+ i_minus_Jacobians[i + 1][j] * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j];
+			F = i_Fluxes[i][j][0] * (grid.iArea(i, j)) 
+				+ i_Fluxes[i + 1][j][0] * (-grid.iArea(i + 1, j)) 
+				+ j_Fluxes[i][j][0] * (grid.jArea(i, j)) 
+				+ j_Fluxes[i][j + 1][0] * (-grid.jArea(i, j + 1)) 
+				+ i_plus_Jacobians[i][j][0] * (grid.iArea(i, j)) * dU_old[i - 1][j]
+				+ i_minus_Jacobians[i + 1][j][0] * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j];   
 
 			res = B * dU_new[i][j + 1] + A * dU_new[i][j] + C * dU_new[i][j - 1] - F;
-			inner_residual = inner_residual + res[0] * res[0]; 
+			inner_residual += res * res;  
 
 		}
 	}
@@ -951,16 +960,16 @@ double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_
 double calculateResidual(const CellTensor& U, const Grid& grid, const iFaceTensor& i_Fluxes, const jFaceTensor& j_Fluxes) {
 
 	double res = 0.0;
-	Vector intres;
+	double intres;
 
 	for (int i = 1; i < Nx - 1; ++i) {
 		for (int j = 1; j < Ny - 1; ++j) {
-			intres = (i_Fluxes[i][j] * (-grid.iArea(i, j))			// Left Side		   
-				+ i_Fluxes[i + 1][j] * (grid.iArea(i + 1, j))		// Right Side 
-				+ j_Fluxes[i][j] * (-grid.jArea(i, j))			// Bottom Side  
-				+ j_Fluxes[i][j + 1] * (grid.jArea(i, j + 1)))/ grid.Volume(i, j); 
+			intres = (i_Fluxes[i][j][0] * (-grid.iArea(i, j))			// Left Side		   
+				+ i_Fluxes[i + 1][j][0] * (grid.iArea(i + 1, j))		// Right Side 
+				+ j_Fluxes[i][j][0] * (-grid.jArea(i, j))			// Bottom Side  
+				+ j_Fluxes[i][j + 1][0] * (grid.jArea(i, j + 1)))/ grid.Volume(i, j); 
 
-			res = res + intres[0] * intres[0];
+			res = res + intres * intres;
 		
 		}
 	}

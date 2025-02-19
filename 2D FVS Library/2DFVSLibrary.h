@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <fstream> 
 #include <omp.h>
+#include <chrono> 
 
 #define TIME chrono::high_resolution_clock::now(); 
 #define DURATION chrono::duration<double> duration; 
@@ -15,14 +16,14 @@ constexpr double gamma = 1.4;
 constexpr int Nx = 50;
 constexpr int Ny = 25;
 
-using CellTensor = array < array < array < double, 4>, Ny>, Nx>;
-using CellTesseract = array < array < array < array<double, 4>, 4>, Ny>, Nx>;
+using CellTensor = array < array < Vector, Ny>, Nx>; 
+using CellTesseract = array < array < Matrix, Ny>, Nx>;  
 
-using iFaceTensor = array < array < array < double, 4>, Ny>, Nx + 1>; 
-using iFaceTesseract = array < array < array < array<double, 4>, 4>, Ny>, Nx + 1>;
+using iFaceTensor = array < array < Vector, Ny>, Nx + 1>;  
+using iFaceTesseract = array < array <Matrix, Ny>, Nx + 1>; 
 
-using jFaceTensor = array < array < array < double, 4>, Ny + 1>, Nx>;
-using jFaceTesseract = array < array < array < array<double, 4>, 4>, Ny + 1>, Nx>;  
+using jFaceTensor = array < array < Vector, Ny + 1>, Nx>; 
+using jFaceTesseract = array < array <Matrix, Ny + 1>, Nx>;   
 
 typedef pair<Vector, Matrix> Duo;
 

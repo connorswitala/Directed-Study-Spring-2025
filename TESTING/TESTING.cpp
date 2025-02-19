@@ -17,9 +17,9 @@ using namespace std;
 
 int main() {
 
-    RampGrid grid(Nx, Ny, 10, 10, 10, 10, 15);
+	CylinderGrid grid(50, 25, 0.1, 0.3, 0.45, 0.001, pi / 2, 3 * pi / 2);
 
-    cout << grid.iNorms(50, 25).y << endl;
+    cout << grid.jArea(45, 24) << endl;
 
     return 0;
 }

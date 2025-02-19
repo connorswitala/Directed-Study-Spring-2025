@@ -21,9 +21,9 @@ int main() {
 	auto start = TIME;
 
 	int counter = 0;
-	double CFL = 2.0, dt = 0.0001;
+	double CFL = 2.0, dt;
 
-	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T);
+	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T); 
 
 	Vector V_inlet = { rho, u, v, p };
 	Vector U_inlet = primtoCons(V_inlet);
@@ -37,9 +37,9 @@ int main() {
 		}
 	}
 
-	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);
+	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);    
 
-	RampGrid grid(Nx, Ny, 10, 10, 10, 10, 15);
+	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15); 
 
 	string gridtype; 
 	if (dynamic_cast<RampGrid*>(&grid)) gridtype = "Ramp";
@@ -72,7 +72,9 @@ int main() {
 		solveOneTimestep(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, dt, CFL,
 			i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
+
 		outer_residual = calculateResidual(U, grid, i_Fluxes, j_Fluxes); 
+
 		if (counter == 0) outer_residual = 1;		 
 		counter++;   
 

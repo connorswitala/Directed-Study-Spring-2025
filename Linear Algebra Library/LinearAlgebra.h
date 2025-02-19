@@ -31,7 +31,7 @@ Matrix randomM();
 void displayVector(const Vector& A);
 void displayMatrix(const Matrix& A);
 
-
+double operator*(const Vector& A, const Vector& B);  
 Vector operator+(const Vector& v1, const Vector& v2);
 Vector operator-(const Vector& v1, const Vector& v2); 
 Vector operator*(const Vector& A, const double& s);
