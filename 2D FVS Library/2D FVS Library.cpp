@@ -902,59 +902,61 @@ double calculateInnerResidual(Tensor& U, Tensor& dU_new, Tensor& dU_old, const G
 	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
 	//
 	double inner_residual = 0.0;
-	Vector res(4, 0.0);
+	double res = 0.0;
 
-	Matrix A; // Relates to U(j+1) 
-	Matrix B; // Relates to U(j) 
-	Matrix C; // Relates to U(j-1) 
-	Vector F; // Right hand side  
+	static Vector A; // Relates to U(j+1) 
+	static Vector B; // Relates to U(j) 
+	static Vector C; // Relates to U(j-1) 
+	static double F; // Right hand side  
 
+	Vector one = { 1, 0, 0, 0 };
 
 	// Middle Boundary
 	for (int i = 1; i < Nx - 1; ++i) {
 		for (int j = 1; j < Ny - 1; ++j) {
 
-			B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1));
+			B = j_minus_Jacobians[i][j + 1][0] * (grid.jArea(i, j + 1)); 
 
-			A = grid.Volume(i, j) / dt * identity(4)
-				- i_minus_Jacobians[i][j] * grid.iArea(i, j)
-				+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)
-				- j_minus_Jacobians[i][j] * grid.jArea(i, j)
-				+ j_plus_Jacobians[i][j + 1] * grid.jArea(i, j + 1);
+			A = grid.Volume(i, j) / dt * one 
+				- i_minus_Jacobians[i][j][0] * grid.iArea(i, j) 
+				+ i_plus_Jacobians[i + 1][j][0] * grid.iArea(i + 1, j) 
+				- j_minus_Jacobians[i][j][0] * grid.jArea(i, j) 
+				+ j_plus_Jacobians[i][j + 1][0] * grid.jArea(i, j + 1); 
 
-			C = j_plus_Jacobians[i][j] * (-grid.jArea(i, j));
+			C = j_plus_Jacobians[i][j][0] * (-grid.jArea(i, j)); 
 
-			F = i_Fluxes[i][j] * (grid.iArea(i, j))
-				+ i_Fluxes[i + 1][j] * (-grid.iArea(i + 1, j))
-				+ j_Fluxes[i][j] * (grid.jArea(i, j))
-				+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1))
-				+ i_plus_Jacobians[i][j] * (grid.iArea(i, j)) * dU_old[i - 1][j]
-				+ i_minus_Jacobians[i + 1][j] * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j];
+			F = i_Fluxes[i][j][0] * (grid.iArea(i, j)) 
+				+ i_Fluxes[i + 1][j][0] * (-grid.iArea(i + 1, j)) 
+				+ j_Fluxes[i][j][0] * (grid.jArea(i, j)) 
+				+ j_Fluxes[i][j + 1][0] * (-grid.jArea(i, j + 1)) 
+				+ i_plus_Jacobians[i][j][0] * (grid.iArea(i, j)) * dU_old[i - 1][j] 
+				+ i_minus_Jacobians[i + 1][j][0] * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j]; 
 
-			res = B * dU_new[i][j + 1] + A * dU_new[i][j] + C * dU_new[i][j - 1] - F;
-			inner_residual = inner_residual + res[0] * res[0]; 
+			res = B * dU_new[i][j + 1] + A * dU_new[i][j] + C * dU_new[i][j - 1] - F; 
+			inner_residual += res * res; 
 
 		}
 	}
-	return sqrt(inner_residual); 
+	return sqrt(inner_residual);
 }
 
 double calculateResidual(const Tensor& U, const Grid& grid, int Nx, int Ny, const Tensor& i_Fluxes, const Tensor& j_Fluxes) {
 
 	double res = 0.0;
-	Vector intres(4, 0.0);
+	double intres;
 
 	for (int i = 1; i < Nx - 1; ++i) {
 		for (int j = 1; j < Ny - 1; ++j) {
-			intres = (i_Fluxes[i][j] * (-grid.iArea(i, j))			// Left Side		   
-				+ i_Fluxes[i + 1][j] * (grid.iArea(i + 1, j))		// Right Side 
-				+ j_Fluxes[i][j] * (-grid.jArea(i, j))			// Bottom Side  
-				+ j_Fluxes[i][j + 1] * (grid.jArea(i, j + 1)))/ grid.Volume(i, j); 
+			intres = (i_Fluxes[i][j][0] * (-grid.iArea(i, j))			// Left Side		   
+				+ i_Fluxes[i + 1][j][0] * (grid.iArea(i + 1, j))		// Right Side 
+				+ j_Fluxes[i][j][0] * (-grid.jArea(i, j))			// Bottom Side  
+				+ j_Fluxes[i][j + 1][0] * (grid.jArea(i, j + 1))) / grid.Volume(i, j);
 
-			res = res + intres[0] * intres[0];
-		
+			res = res + intres * intres;
+
 		}
 	}
 
-	return sqrt(res); 
+	return sqrt(res);
 }
+

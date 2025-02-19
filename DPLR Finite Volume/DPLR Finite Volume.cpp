@@ -22,8 +22,8 @@ int main() {
 
 	auto start = TIME;
 
-	int Nx = 400, Ny = 200, n = 4, counter = 0;
-	double CFL = 1.0, dt;
+	int Nx = 50, Ny = 25, n = 4, counter = 0;
+	double CFL = 2.0, dt;
 
 	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T);
 
@@ -61,7 +61,7 @@ int main() {
 		outer_residual = calculateResidual(U, grid, Nx, Ny, i_Fluxes, j_Fluxes);
 		if (counter == 0) outer_residual = 1;
 
-		if (counter % 50 == 0) {
+		if (counter % 20 == 0) {
 			auto end = TIME;
 			DURATION duration = end - start;
 			cout << "Iteration: " << counter << "\t Residual: " << outer_residual << "\t Elapsed time: " << duration.count() << endl;

@@ -21,6 +21,8 @@ typedef vector<Vector> Matrix;
 typedef vector<Matrix> Tensor;
 typedef vector<Tensor> Tesseract;   
 
+
+double operator*(const Vector& v1, const Vector& v2); 
 Vector operator+(const Vector& v1, const Vector& v2);  
 Vector operator*(const Matrix& A, const Vector& B); 
 Vector operator*(const Vector& A, const double& s);

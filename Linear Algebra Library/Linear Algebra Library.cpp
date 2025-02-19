@@ -12,6 +12,15 @@ void printMemoryUsage() {
 }
 
 
+double operator*(const Vector& v1, const Vector& v2) {
+    double result = 0.0;
+	for (int i = 0; i < v1.size(); ++i) {
+		result += v1[i] * v2[i];
+	}
+    return result; 
+}
+
+
 Vector zeros(int n) {
     return Vector(n, 0.0); 
 }
