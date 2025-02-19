@@ -6,20 +6,20 @@
 
 
 
-//double NewtonMethod(double max_dist, int n_points, double d_min) {
-//	double k = 1, k_new = 1 / 2, ratio = fabs(k - k_new); 
-//	double func, func_prime;
-//
-//	while (ratio < 1e-8) {
-//		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1); 
-//		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / (exp(k) - 1) ^ 2);
-//		k_new = k - func / func_prime; 
-//		ratio = abs(k - k_new); 
-//		k = k_new; 
-//	}
-//
-//	return k; 
-//}
+double NewtonMethod(double max_dist, int n_points, double d_min) {
+	double k = 1, k_new = 1 / 2, ratio = fabs(k - k_new); 
+	double func, func_prime;
+
+	while (ratio < 1e-8) {
+		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1); 
+		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)) );
+		k_new = k - func / func_prime; 
+		ratio = abs(k - k_new); 
+		k = k_new; 
+	}
+
+	return k; 
+}
 
 /////////////////////////////////////////////////
 ///////////// Ramp Grid functions ///////////////
@@ -195,63 +195,117 @@ Point RampGrid::jNorms(int i, int j) const {
 /////////////////////////////////////////////////
 
 
-//CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double d_min, double theta1, double theta2) :
-//	Nx(Nx), Ny(Ny), Cylinder_Radius(Cylinder_Radius), R1(R1), R2(R2), dr_min(dr_min), theta1(theta1), theta2(theta2),
-//	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)), cellVolumes(Nx, vector<double>(Ny)),
-//	iAreas(Nx + 1, vector<double>(Ny)), jAreas(Nx, vector<double>(Ny + 1)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
-//
-//
-//	int Ntheta = Nx + 1, Nr = Ny + 1; 
-//	double R_max, k1; 
-//
-//	Vector theta = zeros(Ntheta);
-//	Matrix r = zeros(Ntheta, Nr); 
-//
-//	double dtheta = (theta2 - theta1) / (Nx);
-//
-//	for (int i = 0; i < Nr; ++i) {
-//		r[i][0] = Cylinder_Radius; 
-//	}
-//
-//	for (int i = 0; i < Ntheta; ++i) {
-//		theta[i] = theta1 + i * dtheta; 
-//	}
-//
-//	for (int i = 0; i < Ntheta; ++i) {
-//		R_max = R1 + (R2 - R1) * cos(theta[i]);
-//		k1 = NewtonMethod(R_max, Nr, dr_min);
-//	}
-//
-//
-//}
+CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double d_min, double theta1, double theta2) : 
+	Nx(Nx), Ny(Ny), Cylinder_Radius(Cylinder_Radius), R1(R1), R2(R2), dr_min(dr_min), theta1(theta1), theta2(theta2), 
+	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)), cellVolumes(Nx, vector<double>(Ny)), 
+	iAreas(Nx + 1, vector<double>(Ny)), jAreas(Nx, vector<double>(Ny + 1)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
 
-//
-//Point CylinderGrid::Center(int i, int j) const {
-//	return cellCenters[i][j];
-//}
-//
-//Point CylinderGrid::Vertex(int i, int j) const {
-//	return vertices[i][j];
-//}
-//
-//double CylinderGrid::Volume(int i, int j) const {
-//	return cellVolumes[i][j];
-//}
-//
-//double CylinderGrid::iArea(int i, int j) const {
-//	return iAreas[i][j];
-//}
-//
-//double CylinderGrid::jArea(int i, int j) const {
-//	return jAreas[i][j];
-//}
-// 
-//Point CylinderGrid::iNorms(int i, int j) const { 
-//	return iNormals[i][j];
-//}
-//Point CylinderGrid::jNorms(int i, int j) const { 
-//	return jNormals[i][j];
-//}
+
+	const int Ntheta = Nx + 1, Nr = Ny + 1; 
+	double R_max, k1; 
+
+	vector<double> theta(Ntheta, 0.0);
+	vector<vector<double>> r(Ntheta, vector<double>(Nr, 0.0));   
+
+	double dtheta = (theta2 - theta1) / (Ntheta - 1); 
+
+	for (int i = 0; i < Ntheta; ++i) { 
+		r[i][0] = Cylinder_Radius;  
+	} 
+
+	for (int i = 0; i < Ntheta; ++i) {
+		theta[i] = theta2 - i * dtheta;  
+	}
+
+	for (int i = 0; i < Ntheta; ++i) {
+
+		R_max = R1 + (R2 - R1) * cos(theta[i]);
+		k1 = NewtonMethod(R_max, Nr, dr_min);
+		
+		for (int j = 1; j < Nr; ++j) {  
+			r[i][j] = r[i][j - 1] + R_max * ((exp(k1 / (Nr - 1)) - 1) / (exp(k1) - 1));  
+		}
+
+	}
+
+	for (int i = 0; i <= Nx; ++i) { 
+		for (int j = 0; j <= Ny; ++j) { 
+			vertices[i][j].x = r[i][j] * cos(theta[i]);
+			vertices[i][j].y = r[i][j] * sin(theta[i]); 
+		}
+	}
+	Point AB, BC, CD, DA; 
+	int i, j;  
+
+	// Calculates cell centers and volumes
+	for (i = 0; i < Nx; ++i) {  
+		for (j = 0; j < Ny; ++j) { 
+			DA = { vertices[i][j].x - vertices[i][j + 1].x, vertices[i][j].y - vertices[i][j + 1].y };
+			AB = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+			BC = { vertices[i + 1][j + 1].x - vertices[i + 1][j].x, vertices[i + 1][j + 1].y - vertices[i + 1][j].y };
+			CD = { vertices[i][j + 1].x - vertices[i + 1][j + 1].x, vertices[i][j + 1].y - vertices[i + 1][j + 1].y };
+
+			cellCenters[i][j] = { (vertices[i][j].x + vertices[i + 1][j].x + vertices[i + 1][j + 1].x + vertices[i][j + 1].x) / 4, (vertices[i][j].y + vertices[i + 1][j].y + vertices[i + 1][j + 1].y + vertices[i][j + 1].y) / 4 };
+			cellVolumes[i][j] = 0.5 * fabs(DA.x * AB.y - DA.y * AB.x) + 0.5 * fabs(BC.x * CD.y - BC.y * CD.x); 
+		}
+	}
+
+
+
+	// Calculates geometries for i-faces
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j < Ny; ++j) {
+
+			AB = { vertices[i][j + 1].x - vertices[i][j].x, vertices[i][j + 1].y - vertices[i][j].y };
+
+			iAreas[i][j] = sqrt(AB.x * AB.x + AB.y * AB.y);
+
+			iNormals[i][j].x = AB.y / fabs(iAreas[i][j]);
+			iNormals[i][j].y = -AB.x / fabs(iAreas[i][j]);
+		}
+	}
+
+	// Calculates geometries for j-faces
+	for (i = 0; i < Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+
+			CD = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+
+			jAreas[i][j] = sqrt(CD.x * CD.x + CD.y * CD.y);
+
+			jNormals[i][j].x = -CD.y / fabs(jAreas[i][j]);
+			jNormals[i][j].y = CD.x / fabs(jAreas[i][j]);
+		}
+	}
+}
+
+
+Point CylinderGrid::Center(int i, int j) const {
+	return cellCenters[i][j];
+}
+
+Point CylinderGrid::Vertex(int i, int j) const {
+	return vertices[i][j];
+}
+
+double CylinderGrid::Volume(int i, int j) const {
+	return cellVolumes[i][j];
+}
+
+double CylinderGrid::iArea(int i, int j) const {
+	return iAreas[i][j];
+}
+
+double CylinderGrid::jArea(int i, int j) const {
+	return jAreas[i][j];
+}
+ 
+Point CylinderGrid::iNorms(int i, int j) const { 
+	return iNormals[i][j];
+}
+Point CylinderGrid::jNorms(int i, int j) const { 
+	return jNormals[i][j];
+}
 
  
 //

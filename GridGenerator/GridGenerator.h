@@ -16,7 +16,7 @@ struct Point {
     Point(double x_val = 0.0, double y_val = 0.0) : x(x_val), y(y_val) {};
 };
 
-//double NewtonMethod(double max_dist, int n_points, double d_min);
+double NewtonMethod(double max_dist, int n_points, double d_min);
 
 
 
@@ -46,7 +46,7 @@ private:
     vector<vector<Point>> cellCenters;
     vector<vector<Point>> iNormals;
     vector<vector<Point>> jNormals;
-    Matrix iAreas, jAreas, cellVolumes;
+    vector<vector<double>> iAreas, jAreas, cellVolumes; 
 
 public:
     RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet_height, double ramp_angle);
@@ -60,30 +60,30 @@ public:
     Point jNorms(int i, int j) const override; 
 
 }; 
-//
-//class CylinderGrid : public Grid {
-//private:
-//    int Nx, Ny;
-//    double Cylinder_Radius, R1, R2, dr_min, theta1, theta2; 
-//
-//    vector<vector<Point>> vertices;
-//    vector<vector<Point>> cellCenters;
-//    vector<vector<Point>> iNormals;
-//    vector<vector<Point>> jNormals;
-//    Matrix iAreas, jAreas, cellVolumes;
-//
-//public:
-//    CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double dr_min, double theta1, double theta2);  
-//
-//    double Volume(int i, int j) const override;
-//    Point Center(int i, int j) const override;
-//    Point Vertex(int i, int j) const override;
-//    double iArea(int i, int j) const override;
-//    double jArea(int i, int j) const override;
-//    Point iNorms(int i, int j) const override;
-//    Point jNorms(int i, int j) const override;
-//
-//};
+
+class CylinderGrid : public Grid {
+private:
+    int Nx, Ny;
+    double Cylinder_Radius, R1, R2, dr_min, theta1, theta2; 
+
+    vector<vector<Point>> vertices;
+    vector<vector<Point>> cellCenters;
+    vector<vector<Point>> iNormals;
+    vector<vector<Point>> jNormals;
+    vector<vector<double>> iAreas, jAreas, cellVolumes;
+
+public:
+    CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double dr_min, double theta1, double theta2);  
+
+    double Volume(int i, int j) const override;
+    Point Center(int i, int j) const override;
+    Point Vertex(int i, int j) const override;
+    double iArea(int i, int j) const override;
+    double jArea(int i, int j) const override;
+    Point iNorms(int i, int j) const override;
+    Point jNorms(int i, int j) const override;
+
+};
 
 //
 //class SquareGrid : public Grid {

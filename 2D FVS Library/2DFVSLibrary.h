@@ -6,9 +6,24 @@
 #include <fstream> 
 #include <omp.h>
 
+#define TIME chrono::high_resolution_clock::now(); 
+#define DURATION chrono::duration<double> duration; 
+
 using namespace std;
 
 constexpr double gamma = 1.4;
+constexpr int Nx = 50;
+constexpr int Ny = 25;
+
+using CellTensor = array < array < array < double, 4>, Ny>, Nx>;
+using CellTesseract = array < array < array < array<double, 4>, 4>, Ny>, Nx>;
+
+using iFaceTensor = array < array < array < double, 4>, Ny>, Nx + 1>; 
+using iFaceTesseract = array < array < array < array<double, 4>, 4>, Ny>, Nx + 1>;
+
+using jFaceTensor = array < array < array < double, 4>, Ny + 1>, Nx>;
+using jFaceTesseract = array < array < array < array<double, 4>, 4>, Ny + 1>, Nx>;  
+
 typedef pair<Vector, Matrix> Duo;
 
 enum class BoundaryCondition {
@@ -30,17 +45,14 @@ struct BoundaryConditions {
 
 };
 
-void writeVTK(const string& filename,
-	Tensor& U,
+void write1DCSV(const string& filename,
+	const CellTensor& U,
 	const Grid& grid,
-	const int Nx,
-	const int Ny);
+	const int j); 
 
-void writeCSV(const string& filename,
-	const Tensor& U,
-	const Grid& grid,
-	const int j,
-	const int Nx);
+void write2DCSV(const string& filename,
+	CellTensor& U,
+	const Grid& grid); 
 
 Vector primtoCons(const Vector& V);
 Vector constoPrim(const Vector& U);
@@ -49,29 +61,29 @@ Vector constoPrim(const Vector& U);
 Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, const Point& normals);
 
 
-void solveOneTimestep(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryTypes, const int& Nx, const int& Ny, double& dt, const double& CFL,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians);
+void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryTypes, double& dt, const double& CFL,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
-double calculate_dt(Tensor& U, const Grid& grid, const int& Nx, const int& Ny, const double& CFL);
+double calculate_dt(CellTensor& U, const Grid& grid, const double& CFL);
 
-void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid, int Nx, int Ny,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians); 
+void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
-void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians);
+void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
-void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians);
+void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
-void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid, 
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians);
+void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid, 
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
 
-double calculateInnerResidual(Tensor& U, Tensor& dU_new, Tensor& dU_old, const Grid& grid, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians);
+double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_old, const Grid& grid, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians);
 
-double calculateResidual(const Tensor& U, const Grid& grid, int Nx, int Ny, const Tensor& i_Fluxes, const Tensor& j_Fluxes); 
+double calculateResidual(const CellTensor& U, const Grid& grid, const iFaceTensor& i_Fluxes, const jFaceTensor& j_Fluxes); 

@@ -11,7 +11,7 @@
 // Function that converts primitives to conserved variables
 Vector primtoCons(const Vector& V) {
 
-	static Vector U(4, 0.0); 
+	Vector U = zerosV(); 
 	U[0] = V[0];
 	U[1] = V[0] * V[1];
 	U[2] = V[0] * V[2];
@@ -23,7 +23,7 @@ Vector primtoCons(const Vector& V) {
 // Function that converts conserved variables to primitives
 Vector constoPrim(const Vector& U) {
 
-	static Vector V(4, 0.0); 
+	static Vector V = zerosV(); 
 	V[0] = U[0];
 	V[1] = U[1] / U[0];
 	V[2] = U[2] / U[0];
@@ -32,27 +32,28 @@ Vector constoPrim(const Vector& U) {
 	return V;
 }
 
+
+
 // Function that calculates ghost cells
 Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, const Point& normals) {   
 
-	static Matrix E;
-	static Vector Ug(4, 0.0), inside_Primitives(4, 0.0), ghost_Primitives(4, 0.0); 
+	Matrix E = zerosM();  
+	Vector Ug = zerosV(), inside_Primitives = zerosV(), ghost_Primitives = zerosV(); 
 
 	double u = 0.0, v = 0.0; 
 
 	switch (type) {
 
 	case BoundaryCondition::Inlet: 
-		E = zeros(4, 4); 
 		return make_pair(U_inlet, E);  
 
 	case BoundaryCondition::Outlet: 
-		E = ones(4, 4); 
+		E = onesM();  
 		return make_pair(U, E); 
 
 	case BoundaryCondition::Wall: 
-		Ug = ones(4); 
-		E = ones(4, 4); 		
+		Ug = onesV(); 
+		E = onesM(); 		 
 		return make_pair(Ug, E); 
 
 	case BoundaryCondition::Symmetry: 
@@ -68,10 +69,10 @@ Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, c
 
 		Ug = primtoCons(ghost_Primitives);
 
-		E = { {1, 0, 0, 0},
-			  {0, (1 - 2 * normals.x * normals.x), -2 * normals.x * normals.y, 0 }, 
+		E = { {{1, 0, 0, 0},
+			  {0, (1 - 2 * normals.x * normals.x), -2 * normals.x * normals.y, 0 },
 			  { 0, -2 * normals.x * normals.y, (1 - 2 * normals.y * normals.y), 0 },
-			  { 0, 0, 0, 1 }
+			  { 0, 0, 0, 1 }}
 		};
 
 		return make_pair(Ug, E);
@@ -82,15 +83,14 @@ Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, c
 
 }
 
-// Writes to VTK file (Contout plot)
-void writeVTK(const string& filename,
-	Tensor& U, 
-	const Grid& grid,
-	const int Nx,
-	const int Ny) {
 
-	Matrix density(Nx, vector<double>(Ny, 0.0)), u_vel(Nx, vector<double>(Ny, 0.0)), v_vel(Nx, vector<double>(Ny, 0.0)), pressure(Nx, vector<double>(Ny, 0.0)); 
-	Vector Primitives(4); 
+// Writes to VTK file (Contout plot)
+void write2DCSV(const string& filename,  
+	CellTensor& U, 
+	const Grid& grid) {
+
+	array<array<double, Ny>, Nx> density, u_vel, v_vel, pressure; 
+	Vector Primitives;
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) { 
@@ -115,17 +115,17 @@ void writeVTK(const string& filename,
 	}
 
 	file.close();
+	cout << "2D File written successfully." << endl;
 }
 
 // Writes to CSV file (Line plot)
-void writeCSV(const string& filename,
-	const Tensor& U,
+void write1DCSV(const string& filename,
+	const CellTensor& U,
 	const Grid& grid,
-	const int j,
-	const int Nx) {
+	const int j) {
 
-	Vector density(Nx, 0.0), u_vel(Nx, 0.0), v_vel(Nx, 0.0), pressure(Nx, 0.0);   
-	Vector Primitives(4);  
+	array<double, Nx> density, u_vel, v_vel, pressure; 
+	Vector Primitives;  
 
 	for (int i = 0; i < Nx; ++i) {
 			Primitives = constoPrim(U[i][j]); 
@@ -144,43 +144,47 @@ void writeCSV(const string& filename,
 	} 
 
 	file.close();
-
+	cout << "1D File written successfully." << endl;
 }
 
 
-void solveOneTimestep(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid, 
-	BoundaryConditions BoundaryTypes, const int& Nx, const int& Ny, double& dt, const double& CFL, 
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) { 
+void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryTypes, double& dt, const double& CFL,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
 	double inner_residual = 1.0;
 
-	while (inner_residual >= 1e-8) {
-		
-		dt = calculate_dt(U, grid, Nx, Ny, CFL); 
+	while (inner_residual >= 1e-8) {		
 
-		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, Nx, Ny, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
-		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, Nx, Ny, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
 		for (int i = 1; i < Nx - 1; ++i) {
-			solveMiddleLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, i, Nx, Ny, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+			solveMiddleLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, i, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 		}
 
-		solveRightLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx - 1, Nx, Ny, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+		solveRightLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx - 1, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
-		inner_residual = calculateInnerResidual(U, dU_new, dU_old, grid, Nx, Ny, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians); 
-
+		inner_residual = calculateInnerResidual(U, dU_new, dU_old, grid, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians); 
+	
 		dU_old = dU_new;
 	}
 
-	U = U + dU_new; 
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+			for (int k = 0; k < 4; ++k) {
+				U[i][j][k] += dU_new[i][j][k];   
+			}
+		}
+	}
 
 }
 
  //Function that calculates dt
-double calculate_dt(Tensor& U, const Grid& grid, const int& Nx, const int& Ny, const double& CFL) {
+double calculate_dt(CellTensor& U, const Grid& grid, const double& CFL) {
 
-	Vector V(4);
+	Vector V;
 	double dx, dy, c, dt_old, dt = 1;
 
 	for (int i = 0; i < Nx; ++i) {
@@ -199,11 +203,11 @@ double calculate_dt(Tensor& U, const Grid& grid, const int& Nx, const int& Ny, c
 	return dt; 
 }
 
-void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid, int Nx, int Ny,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
+void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
-	Vector V(4), Vi(4), Vii(4), Up; 
-	Matrix M(4, Vector(4)), dvdu(4, Vector(4)), dudv(4, Vector(4)); 
+	Vector V, Vi, Vii; 
+	Matrix M, dvdu, dudv; 
 	double g = 5.72;
 	double weight, dp, a, rho, u, v, p, nx, ny, uprime, l1, l2, l3, l4;
 
@@ -228,6 +232,8 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		v = V[2];
 		p = V[3];
 
+		
+
 		a = sqrt(gamma * p / rho);
 		
 		uprime = u * nx + v * ny;
@@ -237,24 +243,24 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a + fabs(uprime + a)); 
 		
 		dvdu = {
-		{1, 0, 0, 0},
-		{-u / rho, 1 / rho, 0, 0},
-		{-v / rho, 0, 1 / rho, 0},
-		{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{ {1, 0, 0, 0},
+			{-u / rho, 1 / rho, 0, 0},
+			{-v / rho, 0, 1 / rho, 0},
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 		};
 
 		dudv = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{u, rho, 0, 0},
 			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 		};
 
 		M = { 
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)}, 
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)}, 
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)}, 
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} 
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		}; 
 
 		i_plus_Jacobians[0][j] = dudv * M * dvdu;
@@ -265,10 +271,10 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a - fabs(uprime + a)); 
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		i_minus_Jacobians[0][j] = dudv * M * dvdu;
@@ -304,24 +310,24 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
 		dvdu = {
-		{1, 0, 0, 0},
-		{-u / rho, 1 / rho, 0, 0},
-		{-v / rho, 0, 1 / rho, 0},
-		{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{ {1, 0, 0, 0},
+			{-u / rho, 1 / rho, 0, 0},
+			{-v / rho, 0, 1 / rho, 0},
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 		};
 
 		dudv = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{u, rho, 0, 0},
 			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 		};
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		i_plus_Jacobians[Nx][j] = dudv * M * dvdu; 
@@ -332,10 +338,10 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a - fabs(uprime + a));
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		i_minus_Jacobians[Nx][j] = dudv * M * dvdu; 
@@ -371,24 +377,24 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
 		dvdu = {
-		{1, 0, 0, 0},
-		{-u / rho, 1 / rho, 0, 0},
-		{-v / rho, 0, 1 / rho, 0},
-		{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{ {1, 0, 0, 0},
+			{-u / rho, 1 / rho, 0, 0},
+			{-v / rho, 0, 1 / rho, 0},
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 		};
 
 		dudv = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{u, rho, 0, 0},
 			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 		};
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		j_plus_Jacobians[i][0] = dudv * M * dvdu; 
@@ -399,10 +405,10 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a - fabs(uprime + a));
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		j_minus_Jacobians[i][0] = dudv * M * dvdu; 
@@ -440,24 +446,24 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
 		dvdu = {
-		{1, 0, 0, 0},
-		{-u / rho, 1 / rho, 0, 0},
-		{-v / rho, 0, 1 / rho, 0},
-		{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{ {1, 0, 0, 0},
+			{-u / rho, 1 / rho, 0, 0},
+			{-v / rho, 0, 1 / rho, 0},
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 		};
 
 		dudv = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{u, rho, 0, 0},
 			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 		};
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		j_plus_Jacobians[i][Ny] = dudv * M * dvdu; 
@@ -468,10 +474,10 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 		l4 = 0.5 * (uprime + a - fabs(uprime + a));
 
 		M = {
-		{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-		{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-		{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 		};
 
 		j_minus_Jacobians[i][Ny] = dudv * M * dvdu; 
@@ -498,8 +504,9 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 			v = V[2];
 			p = V[3];
 
-			a = sqrt(gamma * p / rho);
+			
 
+			a = sqrt(gamma * p / rho);
 			uprime = u * nx + v * ny;
 			l1 = 0.5 * (uprime - a + fabs(uprime - a));
 			l2 = 0.5 * (uprime + fabs(uprime));
@@ -507,27 +514,29 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 			l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
 			dvdu = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{-u / rho, 1 / rho, 0, 0},
 			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 			};
 
+
 			dudv = {
-				{1, 0, 0, 0},
+				{ {1, 0, 0, 0},
 				{u, rho, 0, 0},
 				{v, 0, rho, 0},
-				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 			};
 
 			M = {
-			{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 			};
 
 			i_plus_Jacobians[i][j] = dudv * M * dvdu;
+			 
 
 			l1 = 0.5 * (uprime - a - fabs(uprime - a));
 			l2 = 0.5 * (uprime - fabs(uprime));
@@ -535,15 +544,15 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 			l4 = 0.5 * (uprime + a - fabs(uprime + a));
 
 			M = {
-			{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 			};
-
+			
 			i_minus_Jacobians[i][j] = dudv * M * dvdu;
-			i_Fluxes[i][j] = i_plus_Jacobians[i][j] * U[i - 1][j] + i_minus_Jacobians[i][j] * U[i][j];
-
+			 
+			i_Fluxes[i][j] = i_plus_Jacobians[i][j] * U[i - 1][j] + i_minus_Jacobians[i][j] * U[i][j]; 
 		}
 	}
 
@@ -575,24 +584,24 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 			l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
 			dvdu = {
-			{1, 0, 0, 0},
+			{ {1, 0, 0, 0},
 			{-u / rho, 1 / rho, 0, 0},
 			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1}
+			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
 			};
 
 			dudv = {
-				{1, 0, 0, 0},
+				{ {1, 0, 0, 0},
 				{u, rho, 0, 0},
 				{v, 0, rho, 0},
-				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)}
+				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
 			};
 
 			M = {
-			{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
+				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 			};
 
 			j_plus_Jacobians[i][j] = dudv * M * dvdu; 
@@ -603,23 +612,22 @@ void Calculate_Jacobians(const Tensor& U, Vector& U_inlet, const BoundaryConditi
 			l4 = 0.5 * (uprime + a - fabs(uprime + a));
 
 			M = {
-			{l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
+			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
 			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
 			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)}
+			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
 			};
 
 			j_minus_Jacobians[i][j] = dudv * M * dvdu;  
 			j_Fluxes[i][j] = j_plus_Jacobians[i][j] * U[i][j - 1] + j_minus_Jacobians[i][j] * U[i][j]; 
-		
 		}
 	}
 
-}
+} 
 
-void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
+void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
@@ -628,15 +636,15 @@ void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, co
 
 	// Intermediate matrices
 	static Matrix alpha;
-	static Matrix v(Ny, Vector(4));
-	static Tensor g(Ny, Matrix(4, Vector(4)));
+	static array<array<double, 4>, Ny> v;
+	static array<array<array<double,4>, 4>, Ny> g; 
 
 	// Grab boundary values
 	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0));
 	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));
 
 	// Top Boundary
-	A = grid.Volume(i, Ny - 1) / dt * identity(4)
+	A = grid.Volume(i, Ny - 1) / dt * identity()
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1)
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1)
@@ -659,7 +667,7 @@ void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, co
 
 		B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1));
 
-		A = grid.Volume(i, j) / dt * identity(4)
+		A = grid.Volume(i, j) / dt * identity()
 			- i_minus_Jacobians[i][j] * grid.iArea(i, j)
 			+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)
 			- j_minus_Jacobians[i][j] * grid.jArea(i, j)
@@ -683,7 +691,7 @@ void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, co
 	//  Bottom boundary
 	B = j_minus_Jacobians[i][1] * (-grid.jArea(i, 1));
 
-	A = grid.Volume(i, 0) / dt * identity(4)
+	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
 		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
@@ -701,18 +709,17 @@ void solveLeftLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, co
 
 	// Calculate dU
 	dU_new[i][0] = v[0];
-
 	for (int j = 1; j < Ny; ++j) {
 		dU_new[i][j] = v[j] - g[j] * dU_new[i][j - 1];
 	}
 
 }
 
-void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,   
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
+void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,   
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
-	//auto line1 = chrono::high_resolution_clock::now(); // Start the timer  
+	//auto start = TIME;
 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
@@ -721,15 +728,15 @@ void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, 
 
 	// Intermediate matrices
 	static Matrix alpha; 
-	static Matrix v(Ny, Vector(4));  
-	static Tensor g(Ny, Matrix(4, Vector(4)));  
+	static array<array<double, 4>, Ny> v;
+	static array<array<array<double, 4>, 4>, Ny> g; 
 
 	// Grab boundary values
 	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0)); 
 	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));   
 
 	// Top Boundary
-	A = grid.Volume(i, Ny - 1) / dt * identity(4) 
+	A = grid.Volume(i, Ny - 1) / dt * identity() 
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1) 
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1) 
@@ -753,7 +760,7 @@ void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, 
 
 		B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1)); 
 
-		A = grid.Volume(i, j) / dt * identity(4) 
+		A = grid.Volume(i, j) / dt * identity() 
 			- i_minus_Jacobians[i][j] * grid.iArea(i, j) 
 			+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)  
 			- j_minus_Jacobians[i][j] * grid.jArea(i, j)  
@@ -778,7 +785,7 @@ void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, 
 	//  Bottom boundary
 	B = j_minus_Jacobians[i][1] * (-grid.jArea(i, 1));
 
-	A = grid.Volume(i, 0) / dt * identity(4)
+	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
 		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0) 
@@ -802,14 +809,14 @@ void solveMiddleLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, 
 		dU_new[i][j] = v[j] - g[j] * dU_new[i][j - 1];  
 	}
 
-	//auto line2 = chrono::high_resolution_clock::now(); // Stop the timer 
-	//chrono::duration<double> duration2 = line2 - line1; // Calculate the duration 
-	//cout <<"Line " << i << " took " << duration2.count() << "seconds." << endl; 
+	//auto end = TIME;
+	//DURATION duration = end - start; 
+	//cout << duration.count() << endl; 
 }
 
-void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
+void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
+	BoundaryConditions BoundaryType, const int i, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
@@ -818,15 +825,15 @@ void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, c
 
 	// Intermediate matrices
 	static Matrix alpha;
-	static Matrix v(Ny, Vector(4));
-	static Tensor g(Ny, Matrix(4, Vector(4)));
+	static array<array<double, 4>, Ny> v; 
+	static array<array<array<double, 4>, 4>, Ny> g; 
 
 	// Grab boundary values
 	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0));
 	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));
 
 	// Top Boundary
-	A = grid.Volume(i, Ny - 1) / dt * identity(4)
+	A = grid.Volume(i, Ny - 1) / dt * identity()
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1)
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1)
@@ -849,7 +856,7 @@ void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, c
 
 		B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1));
 
-		A = grid.Volume(i, j) / dt * identity(4)
+		A = grid.Volume(i, j) / dt * identity()
 			- i_minus_Jacobians[i][j] * grid.iArea(i, j)
 			+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)
 			- j_minus_Jacobians[i][j] * grid.jArea(i, j)
@@ -873,7 +880,7 @@ void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, c
 	//  Bottom boundary
 	B = j_minus_Jacobians[i][1] * (-grid.jArea(i, 1));
 
-	A = grid.Volume(i, 0) / dt * identity(4)
+	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
 		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
@@ -896,13 +903,15 @@ void solveRightLine(Tensor& U, Tensor& dU_new, Vector U_inlet, Tensor& dU_old, c
 		dU_new[i][j] = v[j] - g[j] * dU_new[i][j - 1];
 	}
 
+	
+
 }
 
-double calculateInnerResidual(Tensor& U, Tensor& dU_new, Tensor& dU_old, const Grid& grid, const int Nx, const int Ny, const double dt,
-	Tensor& i_Fluxes, Tensor& j_Fluxes, Tesseract& i_plus_Jacobians, Tesseract& i_minus_Jacobians, Tesseract& j_plus_Jacobians, Tesseract& j_minus_Jacobians) {
+double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_old, const Grid& grid, const double dt,
+	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 	//
 	double inner_residual = 0.0;
-	Vector res(4, 0.0);
+	Vector res;
 
 	Matrix A; // Relates to U(j+1) 
 	Matrix B; // Relates to U(j) 
@@ -916,7 +925,7 @@ double calculateInnerResidual(Tensor& U, Tensor& dU_new, Tensor& dU_old, const G
 
 			B = j_minus_Jacobians[i][j + 1] * (grid.jArea(i, j + 1));
 
-			A = grid.Volume(i, j) / dt * identity(4)
+			A = grid.Volume(i, j) / dt * identity()
 				- i_minus_Jacobians[i][j] * grid.iArea(i, j)
 				+ i_plus_Jacobians[i + 1][j] * grid.iArea(i + 1, j)
 				- j_minus_Jacobians[i][j] * grid.jArea(i, j)
@@ -939,10 +948,10 @@ double calculateInnerResidual(Tensor& U, Tensor& dU_new, Tensor& dU_old, const G
 	return sqrt(inner_residual); 
 }
 
-double calculateResidual(const Tensor& U, const Grid& grid, int Nx, int Ny, const Tensor& i_Fluxes, const Tensor& j_Fluxes) {
+double calculateResidual(const CellTensor& U, const Grid& grid, const iFaceTensor& i_Fluxes, const jFaceTensor& j_Fluxes) {
 
 	double res = 0.0;
-	Vector intres(4, 0.0);
+	Vector intres;
 
 	for (int i = 1; i < Nx - 1; ++i) {
 		for (int j = 1; j < Ny - 1; ++j) {
