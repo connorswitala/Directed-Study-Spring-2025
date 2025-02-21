@@ -85,40 +85,31 @@ public:
 
 };
 
-//
-//class SquareGrid : public Grid {
-//private:
-//    int Lx, Nx, Ly, Ny;
-//    vector<vector<Point>> vertices;
-//    vector<vector<Point>> cellCenters;
-//    vector<vector<Point>> faceAreas;
-//    vector<vector<Point>> LNormals;
-//    vector<vector<Point>> RNormals;
-//    vector<vector<Point>> BNormals;
-//    vector<vector<Point>> TNormals;
-//    Matrix LAreas;
-//    Matrix RAreas;
-//    Matrix BAreas;
-//    Matrix TAreas;
-//    Matrix cellVolumes;
-//
-//public:
-//
-//    SquareGrid(int Lx, int Nx, int Ly, int Ny);
-//
-//    double Volume(int i, int j) const override;
-//    double LArea(int i, int j) const override;
-//    double RArea(int i, int j) const override;
-//    double BArea(int i, int j) const override;
-//    double TArea(int i, int j) const override;
-//    Point LNorms(int i, int j) const override;
-//    Point RNorms(int i, int j) const override;
-//    Point BNorms(int i, int j) const override;
-//    Point TNorms(int i, int j) const override;
-//    Point Center(int i, int j) const override;
-//    Point Vertex(int i, int j) const override;
-//
-//
-//
-//
-//};
+
+class SquareGrid : public Grid {
+private:
+    int Nx, Ny; 
+    double Lx, Ly, dmin; 
+
+    vector<vector<Point>> vertices;
+    vector<vector<Point>> cellCenters;
+    vector<vector<Point>> iNormals;
+    vector<vector<Point>> jNormals;
+    vector<vector<double>> iAreas, jAreas, cellVolumes;
+
+public:
+
+    SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin);  
+
+    double Volume(int i, int j) const override;
+    Point Center(int i, int j) const override;
+    Point Vertex(int i, int j) const override;
+    double iArea(int i, int j) const override;
+    double jArea(int i, int j) const override;
+    Point iNorms(int i, int j) const override;
+    Point jNorms(int i, int j) const override;
+
+
+
+
+};

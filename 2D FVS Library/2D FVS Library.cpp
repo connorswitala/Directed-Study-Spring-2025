@@ -34,7 +34,7 @@ Vector constoPrim(const Vector& U) {
 
 
 // Function that calculates ghost cells
-Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, const Point& normals) {   
+Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, const Point& normals) {    
 
 	Matrix E = zerosM();  
 	Vector Ug = zerosV(), inside_Primitives = zerosV(), ghost_Primitives = zerosV(); 
@@ -88,7 +88,9 @@ void write2DCSV(const string& filename,
 	CellTensor& U, 
 	const Grid& grid) {
 
-	array<array<double, Ny>, Nx> density, u_vel, v_vel, pressure; 
+	double a; 
+
+	array<array<double, Ny>, Nx> density, u_velocity, v_velocity, pressure, Mach, Temperature; 
 	Vector Primitives;
 
 	for (int i = 0; i < Nx; ++i) {
@@ -96,25 +98,28 @@ void write2DCSV(const string& filename,
 
 			Primitives = constoPrim(U[i][j]); 
 			density[i][j] = Primitives[0];
-			u_vel[i][j] = Primitives[1];
-			v_vel[i][j] = Primitives[2];
-			pressure[i][j] = Primitives[3];
+			pressure[i][j] = Primitives[3]; 
+			a = sqrt(gamma * pressure[i][j] / density[i][j]);   
+			u_velocity[i][j] = Primitives[1]; 
+			v_velocity[i][j] = Primitives[2];
+			Mach[i][j] = sqrt(u_velocity[i][j] * u_velocity[i][j] + v_velocity[i][j] * v_velocity[i][j]) / a; 
+			Temperature[i][j] = pressure[i][j] / (density[i][j] * R);  
 		}
 	}
 
 	ofstream file(filename);
 
 
-	file << "density, u_velocity, v_velocity, pressure, x_points, y_points, z_points" << endl;
+	file << "density, u velocity, v velocity, pressure, Mach, Temperature, x_points, y_points, z_points" << endl; 
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {
-			file << density[i][j] << ", " << u_vel[i][j] << ", " << v_vel[i][j] << ", " << pressure[i][j] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
+			file << density[i][j] << ", " << u_velocity[i][j] << ", " << v_velocity[i][j] << ", " << pressure[i][j] << ", " << Mach[i][j] << ", " << Temperature[i][j] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
 		}
 	}
 
 	file.close();
-	cout << "2D File written successfully." << endl;
+	cout << "2D File saved successfully as \"" << filename << "\"" << endl; 
 }
 
 // Writes to CSV file (Line plot)
@@ -155,11 +160,7 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 	while (inner_residual >= 1e-8) {		
 
-		auto start = TIME;
 		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
-		auto end = TIME;
-		DURATION duration = end - start;
-		cout << "Calculate Jacobians took: " << duration.count() << " seconds." << endl; 
 
 		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
@@ -210,38 +211,44 @@ double calculate_dt(CellTensor& U, const Grid& grid, const double& CFL) {
 void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid,
 	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
-	static Vector Ui, V, Vi, Vii, V1_Plus, V2_Plus, V1_Minus, V2_Minus, n, m;  
+	static Vector Ui, Uii, Up, Um, V, Vi, Vii, V1_Plus, V2_Plus, V1_Minus, V2_Minus, n, m;   
 	double g = 5.72;
 	double weight, dp, a, rho, u, v, p, nx, ny, uprime, pe, pp, h0, lp, lcp, ltp, lm, lcm, ltm, k; 
 	pe = (gamma - 1);  
+	Matrix X, Y, E;     
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on left boundary 
 	for (int j = 0; j < Ny; ++j) { 
-
-		Duo leftBC = Boundary2D(BoundaryTypes.left, U[0][j], U_inlet, grid.iNorms(0, j));  
-
-		Vi = constoPrim(leftBC.first);  
-		Vii = constoPrim(U[0][j]);  
+				
+		Uii = U[0][j]; 
+		tie(Ui, E) = Boundary2D(BoundaryTypes.left, Uii, U_inlet, grid.iNorms(0, j));    	 
+		  
+		Vi = constoPrim(Ui);   
+		Vii = constoPrim(Uii);
 
 		nx = grid.iNorms(0, j).x;   
 		ny = grid.iNorms(0, j).y;   
 
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);  
-		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));  
-		V = weight * Vi + (1 - weight) * Vii;  
-		Ui  = primtoCons(V);  
+		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 
-		rho = V[0]; 
-		u = V[1]; 
-		v = V[2];
-		p = V[3];		
+		Up = weight * Ui + (1 - weight) * Uii;    
+		Um = (1 - weight) * Ui + weight * Uii;  
+		
+		Vi = constoPrim(Up);
+		Vii = constoPrim(Um);
+
+		rho = Vi[0];  
+		u = Vi[1];  
+		v = Vi[2];
+		p = Vi[3];		
 
 		a = sqrt(gamma * p / rho);		 
 		k = 1 / (a * a); 
 		uprime = u * nx + v * ny;
 
 		pp = 0.5 * (gamma - 1) * (u * u + v * v); 
-		h0 = (Ui[3] + p) / rho; 
+		h0 = (Up[3] + p) / rho; 
 
 		lp = 0.5 * (uprime + fabs(uprime));
 		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp); 
@@ -260,7 +267,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		m = { pp, -u * pe, -v * pe, pe }; 
 		n = { -uprime, nx, ny, 0 }; 		
 		
-		i_plus_Jacobians[0][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+		X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+
+		rho = Vii[0]; 
+		u = Vii[1]; 
+		v = Vii[2]; 
+		p = Vii[3];  
+
+		a = sqrt(gamma * p / rho); 
+		k = 1 / (a * a); 
+		uprime = u * nx + v * ny; 
+
+		pp = 0.5 * (gamma - 1) * (u * u + v * v); 
+		h0 = (Um[3] + p) / rho;  
+
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
 		lm = 0.5 * (uprime - fabs(uprime)); 
 		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm); 
@@ -276,37 +298,44 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			v* ltm / a + ny * lcm,
 			h0* ltm / a + uprime * lcm }; 
 
-		i_minus_Jacobians[0][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();  
-		i_Fluxes[0][j] = i_plus_Jacobians[0][j] * leftBC.first + i_minus_Jacobians[0][j] * U[0][j]; 
+		Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();   
+		i_plus_Jacobians[0][j] = X;  
+		i_minus_Jacobians[0][j] = Y;  
+		i_Fluxes[0][j] = X * Ui + Y * Uii;    
 	}
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on right boundary
 	for (int j = 0; j < Ny; ++j) {
 
-		Duo rightBC = Boundary2D(BoundaryTypes.right, U[Nx - 1][j], U_inlet, grid.iNorms(Nx, j));   
+		Ui = U[Nx - 1][j]; 
+		tie(Uii, E) = Boundary2D(BoundaryTypes.right, Ui, U_inlet, grid.iNorms(Nx, j));     
 
-		Vi = constoPrim(U[Nx - 1][j]);  
-		Vii = constoPrim(rightBC.first); 
+		Vi = constoPrim(Ui);    
+		Vii = constoPrim(Uii); 
 
 		nx = grid.iNorms(Nx, j).x; 
 		ny = grid.iNorms(Nx, j).y; 
 
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-		V = weight * Vi + (1 - weight) * Vii;
-		Ui = primtoCons(V);
 
-		rho = V[0];
-		u = V[1];
-		v = V[2];
-		p = V[3];
+		Up = weight * Ui + (1 - weight) * Uii;
+		Um = (1 - weight) * Ui + weight * Uii;
+
+		Vi = constoPrim(Up);
+		Vii = constoPrim(Um);
+
+		rho = Vi[0];
+		u = Vi[1];
+		v = Vi[2];
+		p = Vi[3];
 
 		a = sqrt(gamma * p / rho);
 		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
 
 		pp = 0.5 * (gamma - 1) * (u * u + v * v);
-		h0 = (Ui[3] + p) / rho;
+		h0 = (Up[3] + p) / rho;
 
 		lp = 0.5 * (uprime + fabs(uprime));
 		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
@@ -325,7 +354,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		m = { pp, -u * pe, -v * pe, pe };
 		n = { -uprime, nx, ny, 0 };
 
-		i_plus_Jacobians[Nx][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+		X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+
+		rho = Vii[0];
+		u = Vii[1];
+		v = Vii[2];
+		p = Vii[3];
+
+		a = sqrt(gamma * p / rho);
+		k = 1 / (a * a);
+		uprime = u * nx + v * ny;
+
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Um[3] + p) / rho;
+
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
 		lm = 0.5 * (uprime - fabs(uprime));
 		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
@@ -341,37 +385,44 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			v * ltm / a + ny * lcm,
 			h0 * ltm / a + uprime * lcm };
 
-		i_minus_Jacobians[Nx][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
-		i_Fluxes[Nx][j] = i_plus_Jacobians[Nx][j] * U[Nx - 1][j] + i_minus_Jacobians[Nx][j] * rightBC.first; 
+		Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
+		i_plus_Jacobians[Nx][j] = X; 
+		i_minus_Jacobians[Nx][j] = Y; 
+		i_Fluxes[Nx][j] = X * Ui + Y * Uii;   
 	}
 
 	// Calculate Jacobians and Explicit fluxes for j-faces on bottom boundary
 	for (int i = 0; i < Nx; ++i) { 
 
-		Duo bottomBC = Boundary2D(BoundaryTypes.bottom, U[i][0], U_inlet, grid.jNorms(i, 0));  
+		Uii = U[i][0];
+		tie(Ui, E) = Boundary2D(BoundaryTypes.bottom, Uii, U_inlet, grid.jNorms(i, 0)); 
 
-		Vi = constoPrim(bottomBC.first); 
-		Vii = constoPrim(U[i][0]); 
+		Vi = constoPrim(Ui);  
+		Vii = constoPrim(Uii);  
 
 		nx = grid.jNorms(i, 0).x;  
 		ny = grid.jNorms(i, 0).y;  
 
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-		V = weight * Vi + (1 - weight) * Vii;
-		Ui = primtoCons(V);
 
-		rho = V[0];
-		u = V[1];
-		v = V[2];
-		p = V[3];
+		Up = weight * Ui + (1 - weight) * Uii;
+		Um = (1 - weight) * Ui + weight * Uii;
+
+		Vi = constoPrim(Up);
+		Vii = constoPrim(Um);
+
+		rho = Vi[0];
+		u = Vi[1];
+		v = Vi[2];
+		p = Vi[3];
 
 		a = sqrt(gamma * p / rho);
 		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
 
 		pp = 0.5 * (gamma - 1) * (u * u + v * v);
-		h0 = (Ui[3] + p) / rho;
+		h0 = (Up[3] + p) / rho;  
 
 		lp = 0.5 * (uprime + fabs(uprime));
 		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
@@ -390,7 +441,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		m = { pp, -u * pe, -v * pe, pe };
 		n = { -uprime, nx, ny, 0 };
 
-		j_plus_Jacobians[i][0] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+		X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+
+		rho = Vii[0];
+		u = Vii[1];
+		v = Vii[2];
+		p = Vii[3];
+
+		a = sqrt(gamma * p / rho);
+		k = 1 / (a * a);
+		uprime = u * nx + v * ny;
+
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Um[3] + p) / rho;
+
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
 		lm = 0.5 * (uprime - fabs(uprime));
 		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
@@ -406,38 +472,46 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			v * ltm / a + ny * lcm,
 			h0 * ltm / a + uprime * lcm };
 
-		j_minus_Jacobians[i][0] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();  
-		j_Fluxes[i][0] = j_plus_Jacobians[i][0] * bottomBC.first + j_minus_Jacobians[i][0] * U[i][0]; 
+		Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
+		j_plus_Jacobians[i][0] = X;
+		j_minus_Jacobians[i][0] = Y; 
+  
+		j_Fluxes[i][0] = X * Ui + Y * Uii;   
 
 	}
 
 	// Calculate Jacobians and Explicit fluxes for j-faces on top boundary
 	for (int i = 0; i < Nx; ++i) {
 
-		Duo topBC = Boundary2D(BoundaryTypes.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny)); 
+		Ui = U[i][Ny - 1]; 
+		tie(Uii, E) = Boundary2D(BoundaryTypes.top, Ui, U_inlet, grid.jNorms(i, Ny));  
 
-		Vi = constoPrim(topBC.first);
-		Vii = constoPrim(U[i][Ny - 1]); 
+		Vi = constoPrim(Ui); 
+		Vii = constoPrim(Uii);  
 
 		nx = grid.jNorms(i, Ny).x;   
 		ny = grid.jNorms(i, Ny).y;   
 
-		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
+		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-		V = weight * Vi + (1 - weight) * Vii;
-		Ui = primtoCons(V);
 
-		rho = V[0];
-		u = V[1];
-		v = V[2];
-		p = V[3];
+		Up = weight * Ui + (1 - weight) * Uii; 
+		Um = (1 - weight) * Ui + weight * Uii; 
+
+		Vi = constoPrim(Up);
+		Vii = constoPrim(Um);
+
+		rho = Vi[0]; 
+		u = Vi[1]; 
+		v = Vi[2]; 
+		p = Vi[3]; 
 
 		a = sqrt(gamma * p / rho);
 		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
 
 		pp = 0.5 * (gamma - 1) * (u * u + v * v);
-		h0 = (Ui[3] + p) / rho;
+		h0 = (Up[3] + p) / rho;
 
 		lp = 0.5 * (uprime + fabs(uprime));
 		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
@@ -456,7 +530,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		m = { pp, -u * pe, -v * pe, pe };
 		n = { -uprime, nx, ny, 0 };
 
-		j_plus_Jacobians[i][Ny] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+		X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
+
+		rho = Vii[0];
+		u = Vii[1];
+		v = Vii[2];
+		p = Vii[3];
+
+		a = sqrt(gamma * p / rho);
+		k = 1 / (a * a);
+		uprime = u * nx + v * ny;
+
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Um[3] + p) / rho;
+
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
 		lm = 0.5 * (uprime - fabs(uprime));
 		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
@@ -472,38 +561,46 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			v * ltm / a + ny * lcm,
 			h0 * ltm / a + uprime * lcm };
 
-		j_minus_Jacobians[i][Ny] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
-		j_Fluxes[i][Ny] = j_plus_Jacobians[i][Ny] * U[i][Ny - 1] + j_minus_Jacobians[i][Ny] * topBC.first; 
+		Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
+		j_plus_Jacobians[i][Ny] = X; 
+		j_minus_Jacobians[i][Ny] = Y; 
+		j_Fluxes[i][Ny] = X * Ui + Y * Uii;   
 
 	}
 
 	// Inner i-faces  
-
 	for (int i = 1; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {	
 
-			Vi = constoPrim(U[i - 1][j]);
-			Vii = constoPrim(U[i][j]);
+			Ui = U[i - 1][j];
+			Uii = U[i][j]; 
+
+			Vi = constoPrim(Ui);
+			Vii = constoPrim(Uii);
 
 			nx = grid.iNorms(i, j).x;  
 			ny = grid.iNorms(i, j).y; 
 
-			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
+			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
 			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-			V = weight * Vi + (1 - weight) * Vii;
-			Ui = primtoCons(V);
 
-			rho = V[0];
-			u = V[1];
-			v = V[2];
-			p = V[3];
+			Up = weight * Ui + (1 - weight) * Uii; 
+			Um = (1 - weight) * Ui + weight * Uii; 
+
+			Vi = constoPrim(Up);
+			Vii = constoPrim(Um);
+
+			rho = Vi[0]; 
+			u = Vi[1]; 
+			v = Vi[2]; 
+			p = Vi[3]; 
 
 			a = sqrt(gamma * p / rho);
 			k = 1 / (a * a);  
 			uprime = u * nx + v * ny;
 
 			pp = 0.5 * (gamma - 1) * (u * u + v * v);
-			h0 = (Ui[3] + p) / rho;
+			h0 = (Up[3] + p) / rho;
 
 			lp = 0.5 * (uprime + fabs(uprime));
 			lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
@@ -522,8 +619,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			m = { pp, -u * pe, -v * pe, pe };
 			n = { -uprime, nx, ny, 0 };
 
-			i_plus_Jacobians[i][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();  
+			X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();
 			 
+			rho = Vii[0];
+			u = Vii[1];
+			v = Vii[2];
+			p = Vii[3];
+
+			a = sqrt(gamma * p / rho);
+			k = 1 / (a * a);
+			uprime = u * nx + v * ny;
+
+			pp = 0.5 * (gamma - 1) * (u * u + v * v);
+			h0 = (Um[3] + p) / rho;
+
+			m = { pp, -u * pe, -v * pe, pe };
+			n = { -uprime, nx, ny, 0 };
 
 			lm = 0.5 * (uprime - fabs(uprime));
 			lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
@@ -539,9 +650,11 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 				v * ltm / a + ny * lcm,
 				h0 * ltm / a + uprime * lcm };
 			
-			i_minus_Jacobians[i][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
+			Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
 			 
-			i_Fluxes[i][j] = i_plus_Jacobians[i][j] * U[i - 1][j] + i_minus_Jacobians[i][j] * U[i][j]; 
+			i_plus_Jacobians[i][j] = X;
+			i_minus_Jacobians[i][j] = Y;
+			i_Fluxes[i][j] = X * Ui + Y * Uii;   
 		}
 	}
 
@@ -549,28 +662,34 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 1; j < Ny; ++j) {
 			
-			Vi = constoPrim(U[i][j - 1]); 
-			Vii = constoPrim(U[i][j]); 
+			Ui = U[i][j - 1]; 
+			Uii = U[i][j];  
+			Vi = constoPrim(Ui); 
+			Vii = constoPrim(Uii);  
 
 			nx = grid.jNorms(i, j).x;  
 			ny = grid.jNorms(i, j).y;  
 
-			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
+			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
 			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-			V = weight * Vi + (1 - weight) * Vii;
-			Ui = primtoCons(V);
 
-			rho = V[0];
-			u = V[1];
-			v = V[2];
-			p = V[3];
+			Up = weight * Ui + (1 - weight) * Uii; 
+			Um = (1 - weight) * Ui + weight * Uii; 
+
+			Vi = constoPrim(Up);  
+			Vii = constoPrim(Um);  
+
+			rho = Vi[0]; 
+			u = Vi[1]; 
+			v = Vi[2]; 
+			p = Vi[3]; 
 
 			a = sqrt(gamma * p / rho);
 			k = 1 / (a * a); 
 			uprime = u * nx + v * ny;
 
 			pp = 0.5 * (gamma - 1) * (u * u + v * v);
-			h0 = (Ui[3] + p) / rho;
+			h0 = (Up[3] + p) / rho;
 
 			lp = 0.5 * (uprime + fabs(uprime));
 			lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
@@ -589,7 +708,22 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			m = { pp, -u * pe, -v * pe, pe };
 			n = { -uprime, nx, ny, 0 };
 
-			j_plus_Jacobians[i][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();  
+			X = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();   
+
+			rho = Vii[0];
+			u = Vii[1];
+			v = Vii[2];
+			p = Vii[3];
+
+			a = sqrt(gamma * p / rho);
+			k = 1 / (a * a);
+			uprime = u * nx + v * ny;
+
+			pp = 0.5 * (gamma - 1) * (u * u + v * v);
+			h0 = (Um[3] + p) / rho;
+
+			m = { pp, -u * pe, -v * pe, pe };
+			n = { -uprime, nx, ny, 0 };
 
 			lm = 0.5 * (uprime - fabs(uprime));
 			lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
@@ -606,8 +740,10 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 				h0 * ltm / a + uprime * lcm };
 
 
-			j_minus_Jacobians[i][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
-			j_Fluxes[i][j] = j_plus_Jacobians[i][j] * U[i][j - 1] + j_minus_Jacobians[i][j] * U[i][j]; 
+			Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
+			j_plus_Jacobians[i][j] = X; 
+			j_minus_Jacobians[i][j] = Y;
+			j_Fluxes[i][j] = X * Ui + Y * Uii;   
 		}
 	}
 

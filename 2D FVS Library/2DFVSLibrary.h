@@ -18,8 +18,10 @@ constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.72;
 
-constexpr int Nx = 500;
-constexpr int Ny = 500;
+constexpr int Nx = 100;
+constexpr int Ny = 50;
+
+
 
 using CellTensor = array < array < Vector, Ny>, Nx>; 
 using CellTesseract = array < array < Matrix, Ny>, Nx>;  

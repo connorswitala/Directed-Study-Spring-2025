@@ -13,15 +13,12 @@
 using namespace std;
 
 
-#define TIME chrono::high_resolution_clock::now(); 
-#define DURATION chrono::duration<double> duration;   
-
 int main() {
 
 	auto start = TIME;
 
 	int counter = 0;
-	double CFL = 2.0, dt;
+	double CFL = 1.0, dt;
 
 	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T); 
 
@@ -37,9 +34,12 @@ int main() {
 		}
 	}
 
-	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);    
+	//BoundaryConditions BoundaryTypes(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);     
+	//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.01, pi / 2, 3 * pi / 2); 
 
-	RampGrid grid(Nx, Ny, 10, 10, 10, 10, 15); 
+
+	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);
+	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15); 
 
 	string gridtype; 
 	if (dynamic_cast<RampGrid*>(&grid)) gridtype = "Ramp";
@@ -65,26 +65,30 @@ int main() {
 
 	double outer_residual = 1.0;
 
-	while (outer_residual >= 0.000001) {
+	while (outer_residual >= 1e-6) {
 
 		dt = calculate_dt(U, grid, CFL);  
 
 		solveOneTimestep(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, dt, CFL,
-			i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
-
+			i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);		
 
 		outer_residual = calculateResidual(U, grid, i_Fluxes, j_Fluxes); 
 
 		if (counter == 0) outer_residual = 1;		 
 		counter++;   
 
-		if (counter % 20 == 0) {
+		if (counter % 50 == 0) {
 			auto end = TIME;
 			DURATION duration = end - start; 
 			cout << "Iteration: " << counter << "\t Residual: " << outer_residual << "\tElapsed time: " << duration.count() << endl;
 		}
 
 	}
+
+	auto end = TIME;
+	DURATION duration = end - start;
+	cout << "Entire program took " << duration.count() << " seconds." << endl;
+
 
 	string filename = to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
 	write2DCSV(filename, U, grid);   
