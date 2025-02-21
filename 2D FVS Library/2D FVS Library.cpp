@@ -155,11 +155,11 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 	while (inner_residual >= 1e-8) {		
 
-		//auto start = TIME;
+		auto start = TIME;
 		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
-		//auto end = TIME;
-		//DURATION duration = end - start;
-		//cout << "Calculate Jacobians took: " << duration.count() << " seconds." << endl; 
+		auto end = TIME;
+		DURATION duration = end - start;
+		cout << "Calculate Jacobians took: " << duration.count() << " seconds." << endl; 
 
 		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
@@ -170,11 +170,8 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 		solveRightLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx - 1, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
 
-		//start = TIME; 
+	
 		inner_residual = calculateInnerResidual(U, dU_new, dU_old, grid, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians); 
-		//end = TIME; 
-		//duration = end - start; 
-		//cout << "Inner Residual took: " << duration.count() << " seconds." << endl << "Inner Residual: " << inner_residual << endl; 
 		dU_old = dU_new;
 	}
 
@@ -213,78 +210,73 @@ double calculate_dt(CellTensor& U, const Grid& grid, const double& CFL) {
 void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid,
 	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
 
-	Vector V, Vi, Vii; 
-	Matrix M, dvdu, dudv; 
+	static Vector Ui, V, Vi, Vii, V1_Plus, V2_Plus, V1_Minus, V2_Minus, n, m;  
 	double g = 5.72;
-	double weight, dp, a, rho, u, v, p, nx, ny, uprime, l1, l2, l3, l4;
-
+	double weight, dp, a, rho, u, v, p, nx, ny, uprime, pe, pp, h0, lp, lcp, ltp, lm, lcm, ltm, k; 
+	pe = (gamma - 1);  
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on left boundary 
-	for (int j = 0; j < Ny; ++j) {
+	for (int j = 0; j < Ny; ++j) { 
 
-		Duo leftBC = Boundary2D(BoundaryTypes.left, U[0][j], U_inlet, grid.iNorms(0, j)); 
+		Duo leftBC = Boundary2D(BoundaryTypes.left, U[0][j], U_inlet, grid.iNorms(0, j));  
 
-		Vi = constoPrim(leftBC.first); 
-		Vii = constoPrim(U[0][j]); 
+		Vi = constoPrim(leftBC.first);  
+		Vii = constoPrim(U[0][j]);  
 
-		nx = grid.iNorms(0, j).x;  
-		ny = grid.iNorms(0, j).y;  
+		nx = grid.iNorms(0, j).x;   
+		ny = grid.iNorms(0, j).y;   
 
-		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
-		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-		V = weight * Vi + (1 - weight) * Vii; 
+		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);  
+		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));  
+		V = weight * Vi + (1 - weight) * Vii;  
+		Ui  = primtoCons(V);  
 
 		rho = V[0]; 
 		u = V[1]; 
 		v = V[2];
-		p = V[3];
+		p = V[3];		
 
-		
-
-		a = sqrt(gamma * p / rho);
-		
+		a = sqrt(gamma * p / rho);		 
+		k = 1 / (a * a); 
 		uprime = u * nx + v * ny;
-		l1 = 0.5 * (uprime - a + fabs(uprime - a));  
-		l2 = 0.5 * (uprime + fabs(uprime)); 
-		l3 = 0.5 * (uprime + fabs(uprime));
-		l4 = 0.5 * (uprime + a + fabs(uprime + a)); 
+
+		pp = 0.5 * (gamma - 1) * (u * u + v * v); 
+		h0 = (Ui[3] + p) / rho; 
+
+		lp = 0.5 * (uprime + fabs(uprime));
+		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp); 
+		ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a))); 
+
+		V1_Plus = { lcp * k,
+				(u * lcp + a * nx * ltp) * k,
+				(v * lcp + a * ny * ltp) * k,
+				(h0 * lcp + a * uprime * ltp) * k };
+
+		V2_Plus = { ltp / a, 
+			u* ltp / a + nx * lcp,
+			v* ltp / a + ny * lcp,
+			h0* ltp / a + uprime * lcp };
+
+		m = { pp, -u * pe, -v * pe, pe }; 
+		n = { -uprime, nx, ny, 0 }; 		
 		
-		dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-		};
+		i_plus_Jacobians[0][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
 
-		dudv = {
-			{ {1, 0, 0, 0},
-			{u, rho, 0, 0},
-			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-		};
+		lm = 0.5 * (uprime - fabs(uprime)); 
+		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm); 
+		ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
 
-		M = { 
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		}; 
+		V1_Minus = { lcm * k,
+					(u * lcm + a * nx * ltm) * k,
+					(v * lcm + a * ny * ltm) * k,
+					(h0 * lcm + a * uprime * ltm) * k };
 
-		i_plus_Jacobians[0][j] = dudv * M * dvdu;
+		V2_Minus = { ltm / a, 
+			u* ltm / a + nx * lcm,
+			v* ltm / a + ny * lcm,
+			h0* ltm / a + uprime * lcm }; 
 
-		l1 = 0.5 * (uprime - a - fabs(uprime - a));
-		l2 = 0.5 * (uprime - fabs(uprime));
-		l3 = 0.5 * (uprime - fabs(uprime));
-		l4 = 0.5 * (uprime + a - fabs(uprime + a)); 
-
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
-
-		i_minus_Jacobians[0][j] = dudv * M * dvdu;
+		i_minus_Jacobians[0][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();  
 		i_Fluxes[0][j] = i_plus_Jacobians[0][j] * leftBC.first + i_minus_Jacobians[0][j] * U[0][j]; 
 	}
 
@@ -293,15 +285,16 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 
 		Duo rightBC = Boundary2D(BoundaryTypes.right, U[Nx - 1][j], U_inlet, grid.iNorms(Nx, j));   
 
-		Vi = constoPrim(U[Nx - 1][j]); 
-		Vii = constoPrim(rightBC.first);
+		Vi = constoPrim(U[Nx - 1][j]);  
+		Vii = constoPrim(rightBC.first); 
 
 		nx = grid.iNorms(Nx, j).x; 
-		ny = grid.iNorms(Nx, j).y;  
+		ny = grid.iNorms(Nx, j).y; 
 
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 		V = weight * Vi + (1 - weight) * Vii;
+		Ui = primtoCons(V);
 
 		rho = V[0];
 		u = V[1];
@@ -309,49 +302,46 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		p = V[3];
 
 		a = sqrt(gamma * p / rho);
-
+		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
-		l1 = 0.5 * (uprime - a + fabs(uprime - a));
-		l2 = 0.5 * (uprime + fabs(uprime));
-		l3 = 0.5 * (uprime + fabs(uprime));
-		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
-		dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-		};
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Ui[3] + p) / rho;
 
-		dudv = {
-			{ {1, 0, 0, 0},
-			{u, rho, 0, 0},
-			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-		};
+		lp = 0.5 * (uprime + fabs(uprime));
+		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
+		ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		V1_Plus = { lcp * k,
+				(u * lcp + a * nx * ltp) * k,
+				(v * lcp + a * ny * ltp) * k,
+				(h0 * lcp + a * uprime * ltp) * k };
 
-		i_plus_Jacobians[Nx][j] = dudv * M * dvdu; 
+		V2_Plus = { ltp / a,
+			u * ltp / a + nx * lcp,
+			v * ltp / a + ny * lcp,
+			h0 * ltp / a + uprime * lcp };
 
-		l1 = 0.5 * (uprime - a - fabs(uprime - a));
-		l2 = 0.5 * (uprime - fabs(uprime));
-		l3 = 0.5 * (uprime - fabs(uprime));
-		l4 = 0.5 * (uprime + a - fabs(uprime + a));
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		i_plus_Jacobians[Nx][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
 
-		i_minus_Jacobians[Nx][j] = dudv * M * dvdu; 
+		lm = 0.5 * (uprime - fabs(uprime));
+		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
+		ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
+
+		V1_Minus = { lcm * k,
+				(u * lcm + a * nx * ltm) * k,
+				(v * lcm + a * ny * ltm) * k,
+				(h0 * lcm + a * uprime * ltm) * k };
+
+		V2_Minus = { ltm / a,
+			u * ltm / a + nx * lcm,
+			v * ltm / a + ny * lcm,
+			h0 * ltm / a + uprime * lcm };
+
+		i_minus_Jacobians[Nx][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
 		i_Fluxes[Nx][j] = i_plus_Jacobians[Nx][j] * U[Nx - 1][j] + i_minus_Jacobians[Nx][j] * rightBC.first; 
 	}
 
@@ -369,6 +359,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 		V = weight * Vi + (1 - weight) * Vii;
+		Ui = primtoCons(V);
 
 		rho = V[0];
 		u = V[1];
@@ -376,49 +367,46 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		p = V[3];
 
 		a = sqrt(gamma * p / rho);
-
+		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
-		l1 = 0.5 * (uprime - a + fabs(uprime - a));
-		l2 = 0.5 * (uprime + fabs(uprime));
-		l3 = 0.5 * (uprime + fabs(uprime));
-		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
-		dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-		};
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Ui[3] + p) / rho;
 
-		dudv = {
-			{ {1, 0, 0, 0},
-			{u, rho, 0, 0},
-			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-		};
+		lp = 0.5 * (uprime + fabs(uprime));
+		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
+		ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		V1_Plus = { lcp * k,
+				(u * lcp + a * nx * ltp) * k,
+				(v * lcp + a * ny * ltp) * k,
+				(h0 * lcp + a * uprime * ltp) * k };
 
-		j_plus_Jacobians[i][0] = dudv * M * dvdu; 
+		V2_Plus = { ltp / a,
+			u * ltp / a + nx * lcp,
+			v * ltp / a + ny * lcp,
+			h0 * ltp / a + uprime * lcp };
 
-		l1 = 0.5 * (uprime - a - fabs(uprime - a));
-		l2 = 0.5 * (uprime - fabs(uprime));
-		l3 = 0.5 * (uprime - fabs(uprime));
-		l4 = 0.5 * (uprime + a - fabs(uprime + a));
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		j_plus_Jacobians[i][0] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
 
-		j_minus_Jacobians[i][0] = dudv * M * dvdu; 
+		lm = 0.5 * (uprime - fabs(uprime));
+		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
+		ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
+
+		V1_Minus = { lcm * k,
+				(u * lcm + a * nx * ltm) * k,
+				(v * lcm + a * ny * ltm) * k,
+				(h0 * lcm + a * uprime * ltm) * k };
+
+		V2_Minus = { ltm / a,
+			u * ltm / a + nx * lcm,
+			v * ltm / a + ny * lcm,
+			h0 * ltm / a + uprime * lcm };
+
+		j_minus_Jacobians[i][0] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();  
 		j_Fluxes[i][0] = j_plus_Jacobians[i][0] * bottomBC.first + j_minus_Jacobians[i][0] * U[i][0]; 
 
 	}
@@ -434,10 +422,10 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		nx = grid.jNorms(i, Ny).x;   
 		ny = grid.jNorms(i, Ny).y;   
 
-
 		dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 		V = weight * Vi + (1 - weight) * Vii;
+		Ui = primtoCons(V);
 
 		rho = V[0];
 		u = V[1];
@@ -445,124 +433,117 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 		p = V[3];
 
 		a = sqrt(gamma * p / rho);
-
+		k = 1 / (a * a);
 		uprime = u * nx + v * ny;
-		l1 = 0.5 * (uprime - a + fabs(uprime - a));
-		l2 = 0.5 * (uprime + fabs(uprime));
-		l3 = 0.5 * (uprime + fabs(uprime));
-		l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
-		dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-		};
+		pp = 0.5 * (gamma - 1) * (u * u + v * v);
+		h0 = (Ui[3] + p) / rho;
 
-		dudv = {
-			{ {1, 0, 0, 0},
-			{u, rho, 0, 0},
-			{v, 0, rho, 0},
-			{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-		};
+		lp = 0.5 * (uprime + fabs(uprime));
+		lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
+		ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		V1_Plus = { lcp * k,
+				(u * lcp + a * nx * ltp) * k,
+				(v * lcp + a * ny * ltp) * k,
+				(h0 * lcp + a * uprime * ltp) * k };
 
-		j_plus_Jacobians[i][Ny] = dudv * M * dvdu; 
+		V2_Plus = { ltp / a,
+			u * ltp / a + nx * lcp,
+			v * ltp / a + ny * lcp,
+			h0 * ltp / a + uprime * lcp };
 
-		l1 = 0.5 * (uprime - a - fabs(uprime - a));
-		l2 = 0.5 * (uprime - fabs(uprime));
-		l3 = 0.5 * (uprime - fabs(uprime));
-		l4 = 0.5 * (uprime + a - fabs(uprime + a));
+		m = { pp, -u * pe, -v * pe, pe };
+		n = { -uprime, nx, ny, 0 };
 
-		M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-		};
+		j_plus_Jacobians[i][Ny] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity(); 
 
-		j_minus_Jacobians[i][Ny] = dudv * M * dvdu; 
+		lm = 0.5 * (uprime - fabs(uprime));
+		lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
+		ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
+
+		V1_Minus = { lcm * k,
+				(u * lcm + a * nx * ltm) * k,
+				(v * lcm + a * ny * ltm) * k,
+				(h0 * lcm + a * uprime * ltm) * k };
+
+		V2_Minus = { ltm / a,
+			u * ltm / a + nx * lcm,
+			v * ltm / a + ny * lcm,
+			h0 * ltm / a + uprime * lcm };
+
+		j_minus_Jacobians[i][Ny] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
 		j_Fluxes[i][Ny] = j_plus_Jacobians[i][Ny] * U[i][Ny - 1] + j_minus_Jacobians[i][Ny] * topBC.first; 
 
 	}
 
 	// Inner i-faces  
+
 	for (int i = 1; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
+		for (int j = 0; j < Ny; ++j) {	
 
 			Vi = constoPrim(U[i - 1][j]);
 			Vii = constoPrim(U[i][j]);
 
-			nx = grid.iNorms(i, j).x;
-			ny = grid.iNorms(i, j).y;
+			nx = grid.iNorms(i, j).x;  
+			ny = grid.iNorms(i, j).y; 
 
 			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 			V = weight * Vi + (1 - weight) * Vii;
+			Ui = primtoCons(V);
 
 			rho = V[0];
 			u = V[1];
 			v = V[2];
 			p = V[3];
 
-			
-
 			a = sqrt(gamma * p / rho);
+			k = 1 / (a * a);  
 			uprime = u * nx + v * ny;
-			l1 = 0.5 * (uprime - a + fabs(uprime - a));
-			l2 = 0.5 * (uprime + fabs(uprime));
-			l3 = 0.5 * (uprime + fabs(uprime));
-			l4 = 0.5 * (uprime + a + fabs(uprime + a));
 
-			dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-			};
+			pp = 0.5 * (gamma - 1) * (u * u + v * v);
+			h0 = (Ui[3] + p) / rho;
 
+			lp = 0.5 * (uprime + fabs(uprime));
+			lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
+			ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
 
-			dudv = {
-				{ {1, 0, 0, 0},
-				{u, rho, 0, 0},
-				{v, 0, rho, 0},
-				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-			};
+			V1_Plus = { lcp * k, 
+				(u * lcp + a * nx * ltp) * k, 
+				(v * lcp + a * ny * ltp)* k, 
+				(h0 * lcp + a * uprime * ltp)* k }; 
 
-			M = {
-				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-			};
+			V2_Plus = { ltp / a,
+				u * ltp / a + nx * lcp,
+				v * ltp / a + ny * lcp,
+				h0 * ltp / a + uprime * lcp };
 
-			i_plus_Jacobians[i][j] = dudv * M * dvdu;
+			m = { pp, -u * pe, -v * pe, pe };
+			n = { -uprime, nx, ny, 0 };
+
+			i_plus_Jacobians[i][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();  
 			 
 
-			l1 = 0.5 * (uprime - a - fabs(uprime - a));
-			l2 = 0.5 * (uprime - fabs(uprime));
-			l3 = 0.5 * (uprime - fabs(uprime));
-			l4 = 0.5 * (uprime + a - fabs(uprime + a));
+			lm = 0.5 * (uprime - fabs(uprime));
+			lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
+			ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
 
-			M = {
-				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-			};
+			V1_Minus = { lcm * k, 
+				(u * lcm + a * nx * ltm) * k,
+				(v * lcm + a * ny * ltm) * k,
+				(h0 * lcm + a * uprime * ltm) * k };
+
+			V2_Minus = { ltm / a,
+				u * ltm / a + nx * lcm,
+				v * ltm / a + ny * lcm,
+				h0 * ltm / a + uprime * lcm };
 			
-			i_minus_Jacobians[i][j] = dudv * M * dvdu;
+			i_minus_Jacobians[i][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity(); 
 			 
 			i_Fluxes[i][j] = i_plus_Jacobians[i][j] * U[i - 1][j] + i_minus_Jacobians[i][j] * U[i][j]; 
 		}
 	}
-
 
 	// Inner j-faces 
 	for (int i = 0; i < Nx; ++i) {
@@ -577,6 +558,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
 			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 			V = weight * Vi + (1 - weight) * Vii;
+			Ui = primtoCons(V);
 
 			rho = V[0];
 			u = V[1];
@@ -584,49 +566,47 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			p = V[3];
 
 			a = sqrt(gamma * p / rho);
+			k = 1 / (a * a); 
 			uprime = u * nx + v * ny;
 
-			l1 = 0.5 * (uprime - a + fabs(uprime - a));
-			l2 = 0.5 * (uprime + fabs(uprime));
-			l3 = 0.5 * (uprime + fabs(uprime));
-			l4 = 0.5 * (uprime + a + fabs(uprime + a));
+			pp = 0.5 * (gamma - 1) * (u * u + v * v);
+			h0 = (Ui[3] + p) / rho;
 
-			dvdu = {
-			{ {1, 0, 0, 0},
-			{-u / rho, 1 / rho, 0, 0},
-			{-v / rho, 0, 1 / rho, 0},
-			{0.5 * (gamma - 1) * (u * u + v * v), -u * (gamma - 1), -v * (gamma - 1), gamma - 1} }
-			};
+			lp = 0.5 * (uprime + fabs(uprime));
+			lcp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a)) - lp);
+			ltp = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
 
-			dudv = {
-				{ {1, 0, 0, 0},
-				{u, rho, 0, 0},
-				{v, 0, rho, 0},
-				{0.5 * (u * u + v * v), rho * u, rho * v, 1 / (gamma - 1)} }
-			};
+			V1_Plus = { lcp * k,
+				(u * lcp + a * nx * ltp)* k,
+				(v * lcp + a * ny * ltp)* k,
+				(h0 * lcp + a * uprime * ltp)* k };
 
-			M = {
-				{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-				{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-				{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-			};
+			V2_Plus = { ltp / a,
+				u * ltp / a + nx * lcp,
+				v * ltp / a + ny * lcp,
+				h0 * ltp / a + uprime * lcp };
 
-			j_plus_Jacobians[i][j] = dudv * M * dvdu; 
+			m = { pp, -u * pe, -v * pe, pe };
+			n = { -uprime, nx, ny, 0 };
 
-			l1 = 0.5 * (uprime - a - fabs(uprime - a));
-			l2 = 0.5 * (uprime - fabs(uprime));
-			l3 = 0.5 * (uprime - fabs(uprime));
-			l4 = 0.5 * (uprime + a - fabs(uprime + a));
+			j_plus_Jacobians[i][j] = outerProduct(V1_Plus, m) + outerProduct(V2_Plus, n) + lp * identity();  
 
-			M = {
-			{ {l2, rho * nx / (2 * a) * (-l1 + l4), rho * ny / (2 * a) * (-l1 + l4), 1 / (2 * a * a) * (l1 - 2 * l2 + l4)},
-			{0, 0.5 * (l1 * nx * nx + 2 * l3 * ny * ny + l4 * nx * nx), 0.5 * nx * ny * (l1 - 2 * l3 + l4), nx / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * nx * ny * (l1 - 2 * l3 + l4), 0.5 * (l1 * ny * ny + 2 * l3 * nx * nx + l4 * ny * ny), ny / (2 * a * rho) * (-l1 + l4)},
-			{0, 0.5 * a * rho * nx * (-l1 + l4), 0.5 * a * rho * ny * (-l1 + l4), 0.5 * (l1 + l4)} }
-			};
+			lm = 0.5 * (uprime - fabs(uprime));
+			lcm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a)) - lm);
+			ltm = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
 
-			j_minus_Jacobians[i][j] = dudv * M * dvdu;  
+			V1_Minus = { lcm * k, 
+				(u * lcm + a * nx * ltm)* k, 
+				(v * lcm + a * ny * ltm)* k, 
+				(h0 * lcm + a * uprime * ltm)* k };  
+
+			V2_Minus = { ltm / a,
+				u * ltm / a + nx * lcm,
+				v * ltm / a + ny * lcm,
+				h0 * ltm / a + uprime * lcm };
+
+
+			j_minus_Jacobians[i][j] = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
 			j_Fluxes[i][j] = j_plus_Jacobians[i][j] * U[i][j - 1] + j_minus_Jacobians[i][j] * U[i][j]; 
 		}
 	}

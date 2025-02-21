@@ -77,6 +77,18 @@ void displayMatrix(const Matrix& A) {
     }
 }
 
+
+Matrix outerProduct(const Vector& a, const Vector& b) {
+    Matrix result = {}; // Initialize with zeros
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result[i][j] = a[i] * b[j];
+        }
+    }
+    return result;
+}
+
+
 Vector operator+(const Vector& v1, const Vector& v2) {
 
     Vector result = zerosV();

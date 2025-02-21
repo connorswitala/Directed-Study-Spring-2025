@@ -27,15 +27,16 @@ Vector Fluxes(const Vector& Vi, const Vector& Vii) {
 
 	Vector Ui = primtoCons(Vi); 
 	Vector Uii = primtoCons(Vii); 
-	int nx = 1, ny = 0;
+
+	double nx = 1.0, ny = 0.0;
 	double R = 287;
-	double cv = R / (gamma - 1);
+	double cv = R / (gamma - 1); 
 
 	double g = 5.72; 
-	double dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
+	double dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
 	double weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1)); 
 	Vector V = weight * Vi + (1 - weight) * Vii; 
-	Vector U = primtoCons(V);  
+	Vector U = primtoCons(V);   
 
 	double rho = V[0], u = V[1], v = V[2], p = V[3]; 
 
@@ -43,12 +44,13 @@ Vector Fluxes(const Vector& Vi, const Vector& Vii) {
 	double a = sqrt(gamma * p / rho);  
 
 	double pe = (gamma - 1);
-	double pp = (gamma - 1) * (-0.5 * (u * u + v * v));
+	double pp = 0.5 * (gamma - 1) * (u * u + v * v); 
 	double h0 = (U[3] + p ) / rho;
 
-	double l_car_plus = 0.5 * (uprime + a + fabs(uprime + a));
-	double l_tild_plus = 0.5 * (uprime + a - uprime - a); 
-	double l_plus = uprime; 
+	double l_plus = 0.5 * (uprime + fabs(uprime));
+	double l_car_plus = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) + 0.5 * (uprime - a + fabs(uprime - a))) - l_plus; 
+	double l_tild_plus = 0.5 * (0.5 * (uprime + a + fabs(uprime + a)) - 0.5 * (uprime - a + fabs(uprime - a)));
+
 
 	Vector V1_PLUS = { l_car_plus / (a * a),
 		(u * l_car_plus + a * nx * l_tild_plus) / (a * a),
@@ -65,10 +67,9 @@ Vector Fluxes(const Vector& Vi, const Vector& Vii) {
 
 	Matrix A_Plus = outerProduct(V1_PLUS, m) + outerProduct(V2_PLUS, n) + l_plus * identity();
 
-
-	double l_car_minus = 0.5 * (uprime - a + fabs(uprime - a)); 
-	double l_tild_minus = 0.5 * (uprime - a - uprime - a); 
-	double l_minus = uprime; 
+	double l_minus = 0.5 * (uprime - fabs(uprime)); 
+	double l_car_minus = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) + 0.5 * (uprime - a - fabs(uprime - a))) - l_minus; 
+	double l_tild_minus = 0.5 * (0.5 * (uprime + a - fabs(uprime + a)) - 0.5 * (uprime - a - fabs(uprime - a)));
 
 
 	Vector V1_MINUS = { l_car_minus / (a * a),
@@ -85,80 +86,6 @@ Vector Fluxes(const Vector& Vi, const Vector& Vii) {
 
 	return A_Plus * Ui + A_Minus * Uii; 
 }
-
-
-//Vector Fluxes(const Vector& Vi, const Vector& Vii) {
-//
-//	Vector Ui = primtoCons(Vi);
-//	Vector Uii = primtoCons(Vii);
-//
-//	double g = 5.72;
-//	double dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]);
-//	double weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
-//	Vector V = weight * Vi + (1 - weight) * Vii;
-//	Vector U = primtoCons(V);
-//
-//
-//	double rho = V[0], u = V[1], v = V[2], p = V[3];
-//	double R = 287;
-//	double cv = R / (gamma - 1);
-//
-//	int nx = 1, ny = 0;
-//	double uprime = u * nx + v * ny;
-//	double a = sqrt(gamma * p / rho);
-//
-//	double l1 = 0.5 * (uprime - a + fabs(uprime - a));
-//	double l2 = 0.5 * (uprime + fabs(uprime));
-//	double l3 = 0.5 * (uprime + fabs(uprime));
-//	double l4 = 0.5 * (uprime + a + fabs(uprime + a));
-//
-//	double l_car_plus = 0.5 * (l4 + l1 - 2 * l2);
-//	double l_tild_plus = 0.5 * (l4 - l1);
-//	double l_plus = l2;
-//
-//	l1 = 0.5 * (uprime - a - fabs(uprime - a));
-//	l2 = 0.5 * (uprime - fabs(uprime));
-//	l3 = 0.5 * (uprime - fabs(uprime));
-//	l4 = 0.5 * (uprime + a - fabs(uprime + a));
-//
-//	double l_car_minus = 0.5 * (l4 + l1 - 2 * l2);
-//	double l_tild_minus = 0.5 * (l4 - l1);
-//	double l_minus = l2;
-//
-//	double pe = R / cv;
-//	double pp = R / (2 * cv) * (u * u + v * v);
-//	double h0 = (U[3] + V[3]) / rho;
-//
-//	Vector V1_PLUS = { l_car_plus / (a * a),
-//		(u * l_car_plus + a * nx * l_tild_plus) / (a * a),
-//		(v * l_car_plus + a * ny * l_tild_plus) / (a * a),
-//		(h0 * l_car_plus + a * uprime * l_tild_plus) / (a * a) };
-//
-//	Vector V1_MINUS = { l_car_minus / (a * a),
-//	(u * l_car_minus + a * nx * l_tild_minus) / (a * a),
-//	(v * l_car_minus + a * ny * l_tild_minus) / (a * a),
-//	(h0 * l_car_minus + a * uprime * l_tild_minus) / (a * a) };
-//
-//	Vector V2_PLUS = { l_tild_plus / a,
-//		u * l_tild_plus / a + nx * l_car_plus,
-//		v * l_tild_plus / a + ny * l_car_plus,
-//		h0 * l_tild_plus / a + uprime * l_car_plus };
-//
-//	Vector V2_MINUS = { l_tild_minus / a,
-//		u * l_tild_minus / a + nx * l_car_minus,
-//		v * l_tild_minus / a + ny * l_car_minus,
-//		h0 * l_tild_minus / a + uprime * l_car_minus };
-//
-//
-//	Vector m = { pp, -u * pe, -v * pe, pe };
-//	Vector n = { -uprime, nx, ny, 0 };
-//
-//	Matrix A_Plus = outerProduct(V1_PLUS, m) + outerProduct(V2_PLUS, n) + l_plus * identity();
-//	Matrix A_Minus = outerProduct(V1_MINUS, m) + outerProduct(V2_MINUS, n) + l_minus * identity();
-//
-//	return A_Plus * Ui + A_Minus * Uii;
-//}
-//
 
 
 

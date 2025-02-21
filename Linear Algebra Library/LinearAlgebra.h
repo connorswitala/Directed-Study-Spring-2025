@@ -39,6 +39,8 @@ Vector operator*(const double& s, const Vector& A);
 Vector operator/(const Vector& v1, const double& s);
 
 
+Matrix outerProduct(const Vector& a, const Vector& b);
+
 Vector operator*(const Matrix& A, const Vector& B);
 
 

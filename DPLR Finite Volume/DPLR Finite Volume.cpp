@@ -39,7 +39,7 @@ int main() {
 
 	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);    
 
-	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15); 
+	RampGrid grid(Nx, Ny, 10, 10, 10, 10, 15); 
 
 	string gridtype; 
 	if (dynamic_cast<RampGrid*>(&grid)) gridtype = "Ramp";
