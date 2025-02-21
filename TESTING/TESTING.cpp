@@ -5,36 +5,34 @@
 #include <cassert>
 #include <cstdlib>
 #include <fstream> 
-#include <chrono>
 #include "LinearAlgebra.h"
 #include "2DFVSLibrary.h"
 #include "GridGenerator.h"
+#include <omp.h> 
 
-using namespace std;
 
+using namespace std; 
 
 int main() {
 
-	int n = 4, Nx = 5, Ny = 5;
-	RampGrid grid(100, 100, 1, 1, 1, 0.75, 10); 
+	SquareGrid grid(Nx, Ny, 1, 1, 0.01);
 
-	auto start1 = chrono::high_resolution_clock::now(); 
- 
-	Tensor U = randomTensor(n, Nx, Ny);
-	Tesseract
-	Vector VL{ 0.15, 1.00, 0.00, 0.3 };
-	Vector VR = { 0.02, 0.3, 0.00, 0.15 };
+    cout << grid.jNorms(Nx/2 - 1, 0).x << endl;       
 
-	Vector UL = primtoCons(VL);
-	Vector UR = primtoCons(VR);
 
-    U[0][0] = A_Plus(UL, grid.RNorms(0, 0)) * UL + A_Minus(UR, grid.RNorms(0, 0)) * UR;
+	string A = "plot_2D_grid.csv"; 
+	ofstream file(A);  
 
-	displayVector(U[0][0]);
 
-	auto end1 = chrono::high_resolution_clock::now();
-	chrono::duration<double> duration1 = end1 - start1;
+	file << "x_points, y_points, z_points" << endl; 
 
-	cout << endl << duration1.count(); 
-	return 0;
-} 
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+			file << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl; 
+		}
+	}
+
+	file.close();
+
+    return 0;
+}

@@ -5,142 +5,60 @@
 #include <cassert>
 #include <cstdlib>
 #include <stdexcept>  // For exception handling
+#include <Windows.h>
+#include <Psapi.h>
+#include <chrono>
+#include <unordered_map>
+#include <string>
+#include <array>
 
 using namespace std;
+constexpr double pi = 3.141592653; 
 
-typedef vector<double> Vector; 
-typedef vector<Vector> Matrix;
-typedef vector<Matrix> Tensor;
-typedef vector<Tensor> Tesseract;   
+void printMemoryUsage(); 
 
-Vector operator+(const Vector& v1, const Vector& v2);  
-Vector operator*(const Matrix& A, const Vector& B); 
+typedef array<double, 4> Vector;   
+typedef array<Vector, 4> Matrix; 
+  
+Vector zerosV();
+Matrix zerosM();
+Vector onesV();
+Matrix onesM(); 
+Matrix identity();
+Vector randomV();
+Matrix randomM();
 
-Matrix operator*(const Matrix& A, const Matrix& B);
-Matrix operator+(const Matrix& A, const Matrix& B);
-Matrix operator-(const Matrix& A, const Matrix& B);
-Matrix operator*(const double& s, const Matrix& B);
-Matrix operator*(const Matrix& B, const double& s);
-Matrix operator^(const Matrix& A, const int s);   
-
-void displayVector(const Vector& A); 
+void displayVector(const Vector& A);
 void displayMatrix(const Matrix& A);
 
-Matrix zeros(int rows, int cols);
-Matrix ones(int rows, int cols);
-Matrix identity(int size);
-Matrix column_vector(int size);
-Vector random(int n); 
-Matrix random(int rows, int cols);
-Tensor random(int n, int rows, int cols);
+double operator*(const Vector& A, const Vector& B);  
+Vector operator+(const Vector& v1, const Vector& v2);
+Vector operator-(const Vector& v1, const Vector& v2); 
+Vector operator*(const Vector& A, const double& s);
+Vector operator*(const double& s, const Vector& A); 
+Vector operator/(const Vector& v1, const double& s);
+
+
+Matrix outerProduct(const Vector& a, const Vector& b);
+
+Vector operator*(const Matrix& A, const Vector& B);
+
+
+Matrix operator+(const Matrix& A, const Matrix& B);
+Matrix operator-(const Matrix& A, const Matrix& B);
+Matrix operator*(const Matrix& A, const double& s);
+Matrix operator*(const double& s, const Matrix& A); 
+Matrix operator*(const Matrix& A, const Matrix& B);
 
 
 
 void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U);
+Vector forwardSubstitution(const Matrix& L, const Vector& B);
+Vector backwardSubstitution(const Matrix& U, const Vector& Y); 
+Vector operator/(const Vector& B, const Matrix& A); 
+
+
 Matrix forwardSubstitution(const Matrix& L, const Matrix& b);
 Matrix backwardSubstitution(const Matrix& U, const Matrix& y);
 Matrix operator/(const Matrix& b, const Matrix& A);
 
-class Matrix1D {
-private:
-    Matrix U;
-    int n, Nx;
-
-public:
-    Matrix1D(int n, int Nx);
-    void print() const;
-    int cols() const;
-    int nvars() const;
-
-    Vector& operator[](int i) { return U[i]; }
-    const Vector& operator[](int i) const { return U[i]; }
-
-    class VariablesProxy {
-    private:
-
-        Matrix& U;
-        int columnIndex;
-
-    public:
-        VariablesProxy(Matrix& U, int columnIndex);
-        VariablesProxy& operator=(const Matrix& colToSet);
-        operator Matrix() const;
-        Matrix operator-(const Matrix& other) const;
-
-    };
-
-    VariablesProxy vars(int col);
-    Matrix1D& operator+=(const Matrix1D& other);
-
-};
-
-class Matrix2D {
-private:
-    Tensor U;
-    int n, Nx, Ny;
-
-public:
-
-    Matrix2D(int n, int Nx, int Ny);
-    double& entry(int k, int i, int j);
-    bool NanorInf() const;
-    void print() const;
-    int nvars() const;
-    int rows() const;
-    int columns() const;
-
-    Matrix& operator[](int i) { return U[i]; }
-    const Matrix& operator[](int i) const { return U[i]; }
-
-    class VariablesProxy {
-    private:
-        Tensor& U;
-        int i, j;
-
-    public:
-
-        VariablesProxy(Tensor& U, int i, int j);
-
-        // Convert ColumnProxy to a Vector (get all variables at (i, j))
-        operator Matrix() const;
-
-        // Assign a Vector to all variables at (i, j)
-        VariablesProxy& operator=(const Matrix& values);
-    };
-
-
-    class LineProxy {
-    private:
-        Tensor& U;
-        int i;
-
-    public:
-
-        LineProxy(Tensor& U, int i);
-        operator Matrix() const;
-        LineProxy& operator=(const Matrix& values);
-        LineProxy& operator=(const Matrix1D& values);
-    };
-
-    class StripProxy {
-    private:
-        Tensor& U;
-        int j;
-
-    public:
-
-        StripProxy(Tensor& U, int j);
-        StripProxy(const Tensor& U, int j);
-        operator Matrix() const;
-        StripProxy& operator=(const Matrix& values);
-
-    };
-
-    // Return ColumnProxy for (i, j) that holds all variables
-    VariablesProxy vars(int i, int j);
-    LineProxy line(int i);
-    StripProxy strip(int j);
-    Matrix2D& operator+=(const Matrix2D& other);
-
-
-};

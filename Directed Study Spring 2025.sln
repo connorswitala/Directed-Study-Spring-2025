@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DPLR Finite Volume", "DPLR 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Linear Algebra Library 2", "Linear Algebra Library 2\Linear Algebra Library 2.vcxproj", "{02988F8E-7BFB-480F-B38B-A4F859B36343}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TESTING 2", "TESTING 2\TESTING 2.vcxproj", "{F7687309-BEE5-48A0-AE96-A14A38CD216D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -101,6 +103,14 @@ Global
 		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x64.Build.0 = Release|x64
 		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x86.ActiveCfg = Release|Win32
 		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x86.Build.0 = Release|Win32
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x64.ActiveCfg = Debug|x64
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x64.Build.0 = Debug|x64
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x86.ActiveCfg = Debug|Win32
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x86.Build.0 = Debug|Win32
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x64.ActiveCfg = Release|x64
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x64.Build.0 = Release|x64
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x86.ActiveCfg = Release|Win32
+		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
