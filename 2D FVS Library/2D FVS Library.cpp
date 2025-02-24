@@ -6,9 +6,44 @@
 #include "2DFVSLibrary.h"
 
 
+Solver::Solver(const Vector& V_inlet, Grid& grid, BoundaryConditions BoundaryType, const double CFL) : V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), 
+i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), i_plus_Jacobians(i_plus_Jacobians), j_plus_Jacobians(j_plus_Jacobians), i_minus_Jacobians(i_minus_Jacobians), j_minus_Jacobians(j_minus_Jacobians),
+dt(dt), CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual) {
 
-// Function that converts primitives to conserved variables
-Vector primtoCons(const Vector& V) {
+	outer_residual = 1.0;
+	inner_residual = 1.0; 
+
+
+	U_inlet = primtoCons(V_inlet); 
+
+	for (int i = 0; i < Nx; ++i) { 
+		for (int j = 0; j < Ny; ++j) { 
+
+			U[i][j] = U_inlet; 
+
+			for (int k = 0; k < 4; ++k) { 
+
+				dU_new[i][j][k] = 0.0; 
+				dU_old[i][j][k] = 0.0; 
+				i_Fluxes[i][j][k] = 0.0;
+				j_Fluxes[i][j][k] = 0.0;
+
+
+				for (int l = 0; l < 4; ++l) {
+					i_plus_Jacobians[i][j][k][l] = 0.0; 
+					j_plus_Jacobians[i][j][k][l] = 0.0; 
+					i_minus_Jacobians[i][j][k][l] = 0.0; 
+					j_minus_Jacobians[i][j][k][l] = 0.0; 
+				}
+			} 
+		}
+	}
+
+
+}; 
+
+
+Vector Solver::primtoCons(const Vector& V) { 
 
 	Vector U = zerosV(); 
 	U[0] = V[0];
@@ -19,8 +54,7 @@ Vector primtoCons(const Vector& V) {
 	return U;
 }
 
-// Function that converts conserved variables to primitives
-Vector constoPrim(const Vector& U) {
+Vector Solver::constoPrim(const Vector& U) { 
 
 	static Vector V = zerosV(); 
 	V[0] = U[0];
@@ -31,42 +65,27 @@ Vector constoPrim(const Vector& U) {
 	return V;
 }
 
-
-
-// Function that calculates ghost cells
-Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, const Point& normals) {    
+Matrix Solver::Boundary2DE(BoundaryCondition type, const Vector& U, const Point& normals) {     
 
 	Matrix E = zerosM();  
-	Vector Ug = zerosV(), inside_Primitives = zerosV(), ghost_Primitives = zerosV(); 
+	
 
 	double u = 0.0, v = 0.0; 
 
 	switch (type) {
 
 	case BoundaryCondition::Inlet: 
-		return make_pair(U_inlet, E);  
+		return E;  
 
 	case BoundaryCondition::Outlet: 
-		E = onesM();  
-		return make_pair(U, E); 
+		
+		return onesM();  
 
 	case BoundaryCondition::Wall: 
-		Ug = onesV(); 
-		E = onesM(); 		 
-		return make_pair(Ug, E); 
+	 
+		return onesM(); 
 
-	case BoundaryCondition::Symmetry: 
-
-		inside_Primitives = constoPrim(U); 
-		u = inside_Primitives[1];
-		v = inside_Primitives[2];	
-
-		ghost_Primitives[0] = inside_Primitives[0]; 
-		ghost_Primitives[1] = u - 2 * (u * normals.x + v * normals.y) * normals.x; 
-		ghost_Primitives[2] = v - 2 * (u * normals.x + v * normals.y) * normals.y; 
-		ghost_Primitives[3] = inside_Primitives[3]; 
-
-		Ug = primtoCons(ghost_Primitives);
+	case BoundaryCondition::Symmetry: 		
 
 		E = { {{1, 0, 0, 0},
 			  {0, (1 - 2 * normals.x * normals.x), -2 * normals.x * normals.y, 0 },
@@ -74,7 +93,43 @@ Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, c
 			  { 0, 0, 0, 1 }}
 		};
 
-		return make_pair(Ug, E);
+		return E; 
+	default:
+		throw invalid_argument("Unknown boundary condition type.");
+	}
+
+}
+
+Vector Solver::Boundary2DU(BoundaryCondition type, const Vector& U, const Point& normals) {
+
+	Vector ghost;  
+
+	double u = 0.0, v = 0.0;
+
+	switch (type) {
+
+	case BoundaryCondition::Inlet:
+		return U_inlet; 
+
+	case BoundaryCondition::Outlet:
+		
+		return U;
+
+	case BoundaryCondition::Wall:
+
+		return onesV();   
+
+	case BoundaryCondition::Symmetry:
+
+		u = U[1] / U[0]; 
+		v = U[2] / U[0]; 
+
+		ghost[0] = U[0]; 
+		ghost[1] = U[0] * (u - 2 * (u * normals.x + v * normals.y) * normals.x);
+		ghost[2] = U[0] * (v - 2 * (u * normals.x + v * normals.y) * normals.y);
+		ghost[3] = U[3];
+
+		return ghost;
 
 	default:
 		throw invalid_argument("Unknown boundary condition type.");
@@ -82,97 +137,75 @@ Duo Boundary2D(BoundaryCondition type, const Vector& U, const Vector& U_inlet, c
 
 }
 
+void Solver::calculate_dt() {  
 
-// Writes to VTK file (Contout plot)
-void write2DCSV(const string& filename,  
-	CellTensor& U, 
-	const Grid& grid) {
-
-	double a; 
-
-	array<array<double, Ny>, Nx> density, u_velocity, v_velocity, pressure, Mach, Temperature; 
-	Vector Primitives;
-
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) { 
-
-			Primitives = constoPrim(U[i][j]); 
-			density[i][j] = Primitives[0];
-			pressure[i][j] = Primitives[3]; 
-			a = sqrt(gamma * pressure[i][j] / density[i][j]);   
-			u_velocity[i][j] = Primitives[1]; 
-			v_velocity[i][j] = Primitives[2];
-			Mach[i][j] = sqrt(u_velocity[i][j] * u_velocity[i][j] + v_velocity[i][j] * v_velocity[i][j]) / a; 
-			Temperature[i][j] = pressure[i][j] / (density[i][j] * R);  
-		}
-	}
-
-	ofstream file(filename);
-
-
-	file << "density, u velocity, v velocity, pressure, Mach, Temperature, x_points, y_points, z_points" << endl; 
+	Vector V;
+	double dx, dy, c, dt_old; 
+	dt = 1; 
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {
-			file << density[i][j] << ", " << u_velocity[i][j] << ", " << v_velocity[i][j] << ", " << pressure[i][j] << ", " << Mach[i][j] << ", " << Temperature[i][j] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
+			V = constoPrim(U[i][j]);
+			dx = min(grid.jArea(i, j), grid.jArea(i, j + 1));
+			dy = min(grid.iArea(i, j), grid.iArea(i + 1, j));
+			c = sqrt(gamma * V[3] / V[0]);
+
+			dt_old = CFL / (fabs(V[1] / dx) + fabs(V[2] / dy) + c * sqrt(1 / (dx * dx) + 1 / (dy * dy))); 
+
+			if (dt_old < dt) dt = dt_old; 
+
 		}
 	}
-
-	file.close();
-	cout << "2D File saved successfully as \"" << filename << "\"" << endl; 
 }
 
-// Writes to CSV file (Line plot)
-void write1DCSV(const string& filename,
-	const CellTensor& U,
-	const Grid& grid,
-	const int j) {
+void Solver::solve() { 
 
-	array<double, Nx> density, u_vel, v_vel, pressure; 
-	Vector Primitives;  
+	auto start = TIME; 
+	int counter = 0;
 
-	for (int i = 0; i < Nx; ++i) {
-			Primitives = constoPrim(U[i][j]); 
-			density[i] = Primitives[0];
-			u_vel[i] = Primitives[1];
-			v_vel[i] = Primitives[2];
-			pressure[i] = Primitives[3];
+	while (outer_residual >= 1e-6) {
+
+		calculate_dt();
+
+		solveOneTimestep();
+
+		calculateResidual();
+
+		if (counter == 0) outer_residual = 1.0;
+		counter++;
+
+		if (counter % 50 == 0) {
+			auto end = TIME;
+			DURATION duration = end - start;
+			cout << "Iteration: " << counter << "\t Residual: " << outer_residual << "\tElapsed time: " << duration.count() << endl; 
+		}
+
 	}
 
-	ofstream file(filename);
+	auto end = TIME;
+	DURATION duration = end - start; 
+	cout << "Program complete in " << duration.count() << endl; 
 
-	file << "density, u_velocity, v_velocity, pressure, x_points, y_points" << endl;
 
-	for (int i = 0; i < Nx; ++i) { 
-		file << density[i] << ", " << u_vel[i] << ", " << v_vel[i] << ", " << pressure[i] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", " << "0.0\n" << endl;  
-	} 
-
-	file.close();
-	cout << "1D File written successfully." << endl;
 }
 
+void Solver::solveOneTimestep() {
 
-void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryTypes, double& dt, const double& CFL,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
-
-	double inner_residual = 1.0;
+	inner_residual = 1.0; 
 
 	while (inner_residual >= 1e-8) {		
 
-		Calculate_Jacobians(U, U_inlet, BoundaryTypes, grid, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+		Calculate_Jacobians();
 
-		solveLeftLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, 0, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
-
+		solveLeftLine();
 
 		for (int i = 1; i < Nx - 1; ++i) {
-			solveMiddleLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, i, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
+			solveMiddleLine(i);
 		}
 
-		solveRightLine(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, Nx - 1, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);
-
-	
-		inner_residual = calculateInnerResidual(U, dU_new, dU_old, grid, dt, i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians); 
+		solveRightLine();
+			
+		calculateInnerResidual(); 
 		dU_old = dU_new;
 	}
 
@@ -186,42 +219,19 @@ void solveOneTimestep(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTen
 
 }
 
- //Function that calculates dt
-double calculate_dt(CellTensor& U, const Grid& grid, const double& CFL) {
+void Solver::Calculate_Jacobians() {
 
-	Vector V;
-	double dx, dy, c, dt_old, dt = 1;
-
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
-			V = constoPrim(U[i][j]);
-			dx = min(grid.jArea(i, j), grid.jArea(i, j + 1));
-			dy = min(grid.iArea(i, j), grid.iArea(i + 1, j));
-			c = sqrt(gamma * V[3] / V[0]);
-
-			dt_old = CFL / (fabs(V[1] / dx) + fabs(V[2] / dy) + c * sqrt(1 / (dx * dx) + 1 / (dy * dy)));
-
-			if (dt_old < dt) dt = dt_old;
-
-		}
-	}
-	return dt; 
-}
-
-void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryConditions& BoundaryTypes, const Grid& grid,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
-
-	static Vector Ui, Uii, Up, Um, V, Vi, Vii, V1_Plus, V2_Plus, V1_Minus, V2_Minus, n, m;   
+	static Vector Ui, Uii, Up, Um, Vi, Vii, V1_Plus, V2_Plus, V1_Minus, V2_Minus, n, m;   
 	double g = 5.72;
-	double weight, dp, a, rho, u, v, p, nx, ny, uprime, pe, pp, h0, lp, lcp, ltp, lm, lcm, ltm, k; 
+	double weight, dp, a, rho, u, v, p, pi, pii, nx, ny, uprime, pe, pp, h0, lp, lcp, ltp, lm, lcm, ltm, k; 
 	pe = (gamma - 1);  
-	Matrix X, Y, E;     
+	Matrix X, Y;     
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on left boundary 
 	for (int j = 0; j < Ny; ++j) { 
 				
 		Uii = U[0][j]; 
-		tie(Ui, E) = Boundary2D(BoundaryTypes.left, Uii, U_inlet, grid.iNorms(0, j));    	 
+		Ui = Boundary2DU(BoundaryType.left, Uii, grid.iNorms(0, j));    	 
 		  
 		Vi = constoPrim(Ui);   
 		Vii = constoPrim(Uii);
@@ -308,7 +318,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 	for (int j = 0; j < Ny; ++j) {
 
 		Ui = U[Nx - 1][j]; 
-		tie(Uii, E) = Boundary2D(BoundaryTypes.right, Ui, U_inlet, grid.iNorms(Nx, j));     
+		Uii = Boundary2DU(BoundaryType.right, Ui, grid.iNorms(Nx, j));     
 
 		Vi = constoPrim(Ui);    
 		Vii = constoPrim(Uii); 
@@ -395,7 +405,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 	for (int i = 0; i < Nx; ++i) { 
 
 		Uii = U[i][0];
-		tie(Ui, E) = Boundary2D(BoundaryTypes.bottom, Uii, U_inlet, grid.jNorms(i, 0)); 
+		Ui = Boundary2DU(BoundaryType.bottom, Uii, grid.jNorms(i, 0)); 
 
 		Vi = constoPrim(Ui);  
 		Vii = constoPrim(Uii);  
@@ -484,7 +494,7 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 	for (int i = 0; i < Nx; ++i) {
 
 		Ui = U[i][Ny - 1]; 
-		tie(Uii, E) = Boundary2D(BoundaryTypes.top, Ui, U_inlet, grid.jNorms(i, Ny));  
+		Uii = Boundary2DU(BoundaryType.top, Ui, grid.jNorms(i, Ny));  
 
 		Vi = constoPrim(Ui); 
 		Vii = constoPrim(Uii);  
@@ -575,14 +585,13 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			Ui = U[i - 1][j];
 			Uii = U[i][j]; 
 
-			Vi = constoPrim(Ui);
-			Vii = constoPrim(Uii);
+			pi = (gamma - 1) * (Ui[3] - 0.5 * Ui[0] * (Ui[1] * Ui[1] + Ui[2] * Ui[2]));
+			pii = (gamma - 1) * (Uii[3] - 0.5 * Uii[0] * (Uii[1] * Uii[1] + Uii[2] * Uii[2]));
+			dp = fabs(pii - pi) / min(pii, pi);
+			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 
 			nx = grid.iNorms(i, j).x;  
-			ny = grid.iNorms(i, j).y; 
-
-			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
-			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
+			ny = grid.iNorms(i, j).y; 			
 
 			Up = weight * Ui + (1 - weight) * Uii; 
 			Um = (1 - weight) * Ui + weight * Uii; 
@@ -664,14 +673,16 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 			
 			Ui = U[i][j - 1]; 
 			Uii = U[i][j];  
-			Vi = constoPrim(Ui); 
-			Vii = constoPrim(Uii);  
+		
+			pi = (gamma - 1) * (Ui[3] - 0.5 * Ui[0] * (Ui[1] * Ui[1] + Ui[2] * Ui[2]));
+			pii = (gamma - 1) * (Uii[3] - 0.5 * Uii[0] * (Uii[1] * Uii[1] + Uii[2] * Uii[2]));
+			dp = fabs(pii - pi) / min(pii, pi);
+			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
 
 			nx = grid.jNorms(i, j).x;  
 			ny = grid.jNorms(i, j).y;  
 
-			dp = fabs(Vii[3] - Vi[3]) / min(Vii[3], Vi[3]); 
-			weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
+		
 
 			Up = weight * Ui + (1 - weight) * Uii; 
 			Um = (1 - weight) * Ui + weight * Uii; 
@@ -749,10 +760,10 @@ void Calculate_Jacobians(const CellTensor& U, Vector& U_inlet, const BoundaryCon
 
 } 
 
-void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const double dt,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
+void Solver::solveLeftLine() {
 
+	int i = 0; 
+	Matrix Et, Eb; 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
 	static Matrix C; // Relates to U(j-1) 
@@ -764,15 +775,15 @@ void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor
 	static array<array<array<double,4>, 4>, Ny> g; 
 
 	// Grab boundary values
-	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0));
-	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));
+	Eb = Boundary2DE(BoundaryType.bottom, U[i][0], grid.jNorms(i, 0));    
+	Et = Boundary2DE(BoundaryType.top, U[i][Ny - 1], grid.jNorms(i, Ny));   
 
 	// Top Boundary
 	A = grid.Volume(i, Ny - 1) / dt * identity()
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1)
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1)
-		+ (j_plus_Jacobians[i][Ny] + topBC.second * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny);
+		+ (j_plus_Jacobians[i][Ny] + Et * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny);
 
 	C = j_plus_Jacobians[i][Ny - 1] * (-grid.jArea(i, Ny - 1));
 
@@ -818,7 +829,7 @@ void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor
 	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
-		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
+		- (Eb * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
 		+ j_plus_Jacobians[i][1] * grid.jArea(i, 1);
 
 	F = i_Fluxes[i][0] * (grid.iArea(i, 0))
@@ -839,12 +850,10 @@ void solveLeftLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor
 
 }
 
-void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,   
-	BoundaryConditions BoundaryType, const int i, const double dt,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
+void Solver::solveMiddleLine(const int i) {
 
 	//auto start = TIME;
-
+	Matrix Et, Eb; 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
 	static Matrix C; // Relates to U(j-1) 
@@ -856,15 +865,15 @@ void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTens
 	static array<array<array<double, 4>, 4>, Ny> g; 
 
 	// Grab boundary values
-	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0)); 
-	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));   
+	Eb = Boundary2DE(BoundaryType.bottom, U[i][0], grid.jNorms(i, 0));  
+	Et = Boundary2DE(BoundaryType.top, U[i][Ny - 1], grid.jNorms(i, Ny));    
 
 	// Top Boundary
 	A = grid.Volume(i, Ny - 1) / dt * identity() 
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1) 
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1) 
-		+ (j_plus_Jacobians[i][Ny] + topBC.second * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny); 
+		+ (j_plus_Jacobians[i][Ny] + Et * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny); 
 
 	C = j_plus_Jacobians[i][Ny - 1] * (-grid.jArea(i, Ny - 1)); 
 
@@ -912,7 +921,7 @@ void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTens
 	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
-		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0) 
+		- (Eb * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0) 
 		+ j_plus_Jacobians[i][1] * grid.jArea(i, 1); 
 
 	F = i_Fluxes[i][0] * (grid.iArea(i, 0))
@@ -938,9 +947,10 @@ void solveMiddleLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTens
 	//cout << duration.count() << endl; 
 }
 
-void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTensor& dU_old, const Grid& grid,
-	BoundaryConditions BoundaryType, const int i, const double dt,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
+void Solver::solveRightLine() {
+
+	int i = Nx - 1; 
+	Matrix Et, Eb; 
 
 	static Matrix A; // Relates to U(j+1) 
 	static Matrix B; // Relates to U(j) 
@@ -953,15 +963,15 @@ void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTenso
 	static array<array<array<double, 4>, 4>, Ny> g; 
 
 	// Grab boundary values
-	Duo bottomBC = Boundary2D(BoundaryType.bottom, U[i][0], U_inlet, grid.jNorms(i, 0));
-	Duo topBC = Boundary2D(BoundaryType.top, U[i][Ny - 1], U_inlet, grid.jNorms(i, Ny));
+	Eb = Boundary2DE(BoundaryType.bottom, U[i][0], grid.jNorms(i, 0));
+	Et = Boundary2DE(BoundaryType.top, U[i][Ny - 1], grid.jNorms(i, Ny));
 
 	// Top Boundary
 	A = grid.Volume(i, Ny - 1) / dt * identity()
 		- i_minus_Jacobians[i][Ny - 1] * grid.iArea(i, Ny - 1)
 		+ i_plus_Jacobians[i + 1][Ny - 1] * grid.iArea(i + 1, Ny - 1)
 		- j_minus_Jacobians[i][Ny - 1] * grid.jArea(i, Ny - 1)
-		+ (j_plus_Jacobians[i][Ny] + topBC.second * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny);
+		+ (j_plus_Jacobians[i][Ny] + Et * j_minus_Jacobians[i][Ny]) * grid.jArea(i, Ny);
 
 	C = j_plus_Jacobians[i][Ny - 1] * (-grid.jArea(i, Ny - 1));
 
@@ -1007,7 +1017,7 @@ void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTenso
 	A = grid.Volume(i, 0) / dt * identity()
 		- i_minus_Jacobians[i][0] * grid.iArea(i, 0)
 		+ i_plus_Jacobians[i + 1][0] * grid.iArea(i + 1, 0)
-		- (bottomBC.second * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
+		- (Eb * j_plus_Jacobians[i][0] + j_minus_Jacobians[i][0]) * grid.jArea(i, 0)
 		+ j_plus_Jacobians[i][1] * grid.jArea(i, 1);
 
 	F = i_Fluxes[i][0] * (grid.iArea(i, 0))
@@ -1031,10 +1041,9 @@ void solveRightLine(CellTensor& U, CellTensor& dU_new, Vector U_inlet, CellTenso
 
 }
 
-double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_old, const Grid& grid, const double dt,
-	iFaceTensor& i_Fluxes, jFaceTensor& j_Fluxes, iFaceTesseract& i_plus_Jacobians, iFaceTesseract& i_minus_Jacobians, jFaceTesseract& j_plus_Jacobians, jFaceTesseract& j_minus_Jacobians) {
-	//
-	double inner_residual = 0.0;
+void Solver::calculateInnerResidual() { 
+	
+	inner_residual = 0.0;
 	double res = 0.0; 
 
 	static Vector A; // Relates to U(j+1) 
@@ -1070,12 +1079,12 @@ double calculateInnerResidual(CellTensor& U, CellTensor& dU_new, CellTensor& dU_
 
 		}
 	}
-	return sqrt(inner_residual); 
+	inner_residual = sqrt(inner_residual); 
 }
 
-double calculateResidual(const CellTensor& U, const Grid& grid, const iFaceTensor& i_Fluxes, const jFaceTensor& j_Fluxes) {
+void Solver::calculateResidual() {  
 
-	double res = 0.0;
+	outer_residual = 0.0;  
 	double intres;
 
 	for (int i = 1; i < Nx - 1; ++i) {
@@ -1085,10 +1094,48 @@ double calculateResidual(const CellTensor& U, const Grid& grid, const iFaceTenso
 				+ j_Fluxes[i][j][0] * (-grid.jArea(i, j))			// Bottom Side  
 				+ j_Fluxes[i][j + 1][0] * (grid.jArea(i, j + 1)))/ grid.Volume(i, j); 
 
-			res = res + intres * intres;
+			outer_residual = outer_residual + intres * intres; 
 		
 		}
 	}
 
-	return sqrt(res); 
+	outer_residual = sqrt(outer_residual);
 }
+
+void Solver::write2DCSV(const string& filename) {
+
+	double a;
+
+	array<array<double, Ny>, Nx> density, u_velocity, v_velocity, pressure, Mach, Temperature;
+	Vector Primitives;
+
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+
+			Primitives = constoPrim(U[i][j]);
+			density[i][j] = Primitives[0];
+			pressure[i][j] = Primitives[3];
+			a = sqrt(gamma * pressure[i][j] / density[i][j]);
+			u_velocity[i][j] = Primitives[1];
+			v_velocity[i][j] = Primitives[2];
+			Mach[i][j] = sqrt(u_velocity[i][j] * u_velocity[i][j] + v_velocity[i][j] * v_velocity[i][j]) / a;
+			Temperature[i][j] = pressure[i][j] / (density[i][j] * R);
+		}
+	}
+
+	ofstream file(filename);
+
+
+	file << "density, u velocity, v velocity, pressure, Mach, Temperature, x_points, y_points, z_points" << endl;
+
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+			file << density[i][j] << ", " << u_velocity[i][j] << ", " << v_velocity[i][j] << ", " << pressure[i][j] << ", " << Mach[i][j] << ", " << Temperature[i][j] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
+		}
+	}
+
+	file.close();
+	cout << "2D File saved successfully as \"" << filename << "\"" << endl;
+}
+
+

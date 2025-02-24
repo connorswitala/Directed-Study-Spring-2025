@@ -17,28 +17,16 @@ int main() {
 
 	auto start = TIME;
 
-	int counter = 0;
-	double CFL = 1.0, dt;
 
 	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T); 
-
+	const double CFL = 2.0; 
 	Vector V_inlet = { rho, u, v, p };
-	Vector U_inlet = primtoCons(V_inlet);
 
-
-	CellTensor U, dU_new, dU_old; 
-
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
-			U[i][j] = U_inlet;
-		}
-	}
-
-	//BoundaryConditions BoundaryTypes(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);     
+	//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);      
 	//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.01, pi / 2, 3 * pi / 2); 
 
 
-	BoundaryConditions BoundaryTypes(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);
+	BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry); 
 	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15); 
 
 	string gridtype; 
@@ -48,50 +36,12 @@ int main() {
 
 	cout << "Running DPLR for " << Nx << " by " << Ny << " " << gridtype << "..." << endl;
 
-	iFaceTensor i_Fluxes;
-	jFaceTensor j_Fluxes;
+	Solver solver(V_inlet, grid, BCs, CFL);   
 
-	iFaceTesseract i_plus_Jacobians, i_minus_Jacobians;
-	jFaceTesseract j_plus_Jacobians, j_minus_Jacobians; 
-
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
-			for (int k = 0; k < 4; ++k) {
-				dU_new[i][j][k] = 0.0; 
-				dU_old[i][j][k] = 0.0; 
-			}
-		}
-	}
-
-	double outer_residual = 1.0;
-
-	while (outer_residual >= 1e-6) {
-
-		dt = calculate_dt(U, grid, CFL);  
-
-		solveOneTimestep(U, dU_new, U_inlet, dU_old, grid, BoundaryTypes, dt, CFL,
-			i_Fluxes, j_Fluxes, i_plus_Jacobians, i_minus_Jacobians, j_plus_Jacobians, j_minus_Jacobians);		
-
-		outer_residual = calculateResidual(U, grid, i_Fluxes, j_Fluxes); 
-
-		if (counter == 0) outer_residual = 1;		 
-		counter++;   
-
-		if (counter % 50 == 0) {
-			auto end = TIME;
-			DURATION duration = end - start; 
-			cout << "Iteration: " << counter << "\t Residual: " << outer_residual << "\tElapsed time: " << duration.count() << endl;
-		}
-
-	}
-
-	auto end = TIME;
-	DURATION duration = end - start;
-	cout << "Entire program took " << duration.count() << " seconds." << endl;
-
+	solver.solve(); 
 
 	string filename = to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
-	write2DCSV(filename, U, grid);   
+	solver.write2DCSV(filename);    
 
 	printMemoryUsage();
 
