@@ -165,30 +165,30 @@ RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet
 }
 
 
-Point RampGrid::Center(int i, int j) const {
+inline Point RampGrid::Center(int i, int j) const {
 	return cellCenters[i][j];
 }
 
-Point RampGrid::Vertex(int i, int j) const {
+inline Point RampGrid::Vertex(int i, int j) const {
 	return vertices[i][j];
 }
 
-double RampGrid::Volume(int i, int j) const {
+inline double RampGrid::Volume(int i, int j) const {
 	return cellVolumes[i][j];
 }
 
-double RampGrid::iArea(int i, int j) const {
+inline double RampGrid::iArea(int i, int j) const {
 	return iAreas[i][j]; 
 }
 
-double RampGrid::jArea(int i, int j) const {
+inline double RampGrid::jArea(int i, int j) const {
 	return jAreas[i][j]; 
 }
 
-Point RampGrid::iNorms(int i, int j) const { 
+inline Point RampGrid::iNorms(int i, int j) const {
 	return iNormals[i][j]; 
 }
-Point RampGrid::jNorms(int i, int j) const {
+inline Point RampGrid::jNorms(int i, int j) const {
 	return jNormals[i][j];
 }
 
