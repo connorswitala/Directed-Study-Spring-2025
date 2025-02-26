@@ -29,26 +29,29 @@ int main() {
 
 	double Wall_Temp = 300; 
 
-	const double CFL = 1.0; 
+	const double CFL = 3.0;
 
-	
+	//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
+	//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
 
-	BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
-	CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
+	BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
+	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);
 
-	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
-	//RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);
-
-	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);  
+	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::AdiabaticWall, BoundaryCondition::Symmetry);  
 	//FlatPlateGrid grid(Nx, Ny, 1e-3, 1e-3, 5e-6);     
 
-	const int progress_update = 1;  
+	const int progress_update = 50;  
 
 	Solver solver(INLET, grid, BCs, CFL, Wall_Temp, progress_update);     
 
-	solver.solve_viscous();       
 
+	Im a really big fan of david and his big horse cock
+
+	solver.solve_inviscid();   
 	printMemoryUsage();
 
 	return 0;
 }
+
+
+

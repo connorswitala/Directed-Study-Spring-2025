@@ -15,8 +15,7 @@ double NewtonMethod(double max_dist, int n_points, double d_min) {
 		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)));
 		k_new = k - func / func_prime; 
 		ratio = fabs(k - k_new); 
-		k = k_new; 
-		cout << k << endl; 
+		k = k_new;
 	}
 
 	return k; 

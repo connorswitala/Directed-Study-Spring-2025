@@ -15,10 +15,9 @@ using namespace std;
 
 int main() {
 
-	CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.01, pi / 2, 3 * pi / 2);   
-/*
-    cout << grid.iArea(10, 0) << endl;      */   
+	FlatPlateGrid grid(Nx, Ny, 1, 1, 0.001); 
 
+	cout << grid.jNorms(Nx - 1, 0).x << endl; 
 
 	//string A = "plot_2D_grid.csv"; 
 	//ofstream file(A);  
