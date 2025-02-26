@@ -10,12 +10,13 @@ double NewtonMethod(double max_dist, int n_points, double d_min) {
 	double k = 1, k_new = 1 / 2, ratio = fabs(k - k_new); 
 	double func, func_prime;
 
-	while (ratio < 1e-8) {
-		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1); 
-		func_prime = -max_dist * ( ((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)) );
+	while (ratio >= 0.00000000001) {
+		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1);
+		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)));
 		k_new = k - func / func_prime; 
-		ratio = abs(k - k_new); 
+		ratio = fabs(k - k_new); 
 		k = k_new; 
+		cout << k << endl; 
 	}
 
 	return k; 
@@ -223,9 +224,8 @@ CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, do
 
 		R_max = R1 + (R2 - R1) * cos(theta[i]);
 		k1 = NewtonMethod(R_max, Nr, dr_min);
-
 		for (int j = 1; j < Nr; ++j) {
-			r[i][j] = r[i][0] + R_max * ((exp(k1 *j / (Nr - 1)) - 1) / (exp(k1) - 1));
+			r[i][j] = r[i][0] + R_max * ((exp(k1 * j / (Nr - 1)) - 1) / (exp(k1) - 1));
 		}
 
 	}
@@ -320,11 +320,11 @@ Point CylinderGrid::jNorms(int i, int j) const {
 /////////////// Square Grid functions /////////////
 ///////////////////////////////////////////////////
 
-SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
+FlatPlateGrid::FlatPlateGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 	: Nx(Nx), Ny(Ny), Lx(Lx), Ly(Ly), dmin(dmin),   
 	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)),
-	cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx, vector<double>(Ny, 0.0)), 
-	jAreas(Nx, vector<double>(Ny, 0.0)), iNormals(Nx, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny)) {   
+	cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny, 0.0)), 
+	jAreas(Nx, vector<double>(Ny + 1, 0.0)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {    
 
 
 	int i, j;
@@ -340,7 +340,6 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 			vertices[i][j].y = 0 + Ly * ((exp(k * j / Ny) - 1) / (exp(k) - 1));   
 		}
 	}
-
 	
 	// Edge vectors
 	Point AB, BC, CD, DA;
@@ -360,6 +359,8 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 		}
 	}
 
+
+
 	// Calculates geometries for i-faces
 	for (i = 0; i <= Nx; ++i) {
 		for (j = 0; j < Ny; ++j) {
@@ -373,6 +374,7 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 		}
 	}
 
+
 	// Calculates geometries for j-faces
 	for (i = 0; i < Nx; ++i) {
 		for (j = 0; j <= Ny; ++j) {
@@ -381,7 +383,7 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 
 			jAreas[i][j] = sqrt(CD.x * CD.x + CD.y * CD.y);
 
-			jNormals[i][j].x = -CD.y / fabs(jAreas[i][j]);
+			jNormals[i][j].x = CD.y / fabs(jAreas[i][j]);
 			jNormals[i][j].y = CD.x / fabs(jAreas[i][j]);
 		}
 	}
@@ -392,31 +394,31 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 
 
 
-Point SquareGrid::SquareGrid::Center(int i, int j) const {
+Point FlatPlateGrid::FlatPlateGrid::Center(int i, int j) const {
 	return cellCenters[i][j];
 }
 
-Point SquareGrid::SquareGrid::Vertex(int i, int j) const {
+Point FlatPlateGrid::FlatPlateGrid::Vertex(int i, int j) const {
 	return vertices[i][j];
 }
 
-double SquareGrid::SquareGrid::Volume(int i, int j) const {
+double FlatPlateGrid::FlatPlateGrid::Volume(int i, int j) const {
 	return cellVolumes[i][j];
 }
 
-double SquareGrid::SquareGrid::iArea(int i, int j) const {
+double FlatPlateGrid::FlatPlateGrid::iArea(int i, int j) const {
 	return iAreas[i][j];
 }
 
-double SquareGrid::SquareGrid::jArea(int i, int j) const {
+double FlatPlateGrid::FlatPlateGrid::jArea(int i, int j) const {
 	return jAreas[i][j];
 }
 
 
-Point SquareGrid::SquareGrid::iNorms(int i, int j) const {
+Point FlatPlateGrid::FlatPlateGrid::iNorms(int i, int j) const {
 	return iNormals[i][j];
 }
-Point SquareGrid::SquareGrid::jNorms(int i, int j) const {
+Point FlatPlateGrid::FlatPlateGrid::jNorms(int i, int j) const {
 	return jNormals[i][j];
 }
  

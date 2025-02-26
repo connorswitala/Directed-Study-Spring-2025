@@ -17,31 +17,36 @@ int main() {
 
 	auto start = TIME;
 
+	inlet_conditions INLET; 
 
-	double p = 10000.0, T = 300.0, R = 287.0, M = 2.5, a = sqrt(gamma * R * T), u = M * a, v = 0, rho = p / (R * T); 
-	const double CFL = 2.0; 
-	Vector V_inlet = { rho, u, v, p };
+	INLET.p = 10000.0,   
+	INLET.T = 300.0,
+	INLET.M = 2.5,  
+	INLET.a = sqrt(gamma * R * INLET.T),   
+	INLET.u = INLET.M * INLET.a, 
+	INLET.v = 0,  
+	INLET.rho = INLET.p / (R * INLET.T);   
 
-	//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);      
-	//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.01, pi / 2, 3 * pi / 2); 
+	double Wall_Temp = 300; 
 
+	const double CFL = 1.0; 
 
-	BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry); 
-	RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15); 
+	
 
-	string gridtype; 
-	if (dynamic_cast<RampGrid*>(&grid)) gridtype = "Ramp";
-	else if (dynamic_cast<CylinderGrid*>(&grid)) gridtype = "Cylinder";
-	else gridtype = "Unknown"; 
+	BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
+	CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
 
-	cout << "Running DPLR for " << Nx << " by " << Ny << " " << gridtype << "..." << endl;
+	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
+	//RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);
 
-	Solver solver(V_inlet, grid, BCs, CFL);   
+	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);  
+	//FlatPlateGrid grid(Nx, Ny, 1e-3, 1e-3, 5e-6);     
 
-	solver.solve(); 
+	const int progress_update = 1;  
 
-	string filename = to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
-	solver.write2DCSV(filename);    
+	Solver solver(INLET, grid, BCs, CFL, Wall_Temp, progress_update);     
+
+	solver.solve_viscous();       
 
 	printMemoryUsage();
 

@@ -51,13 +51,13 @@ private:
 public:
     RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet_height, double ramp_angle);
 
-    double Volume(int i, int j) const override;
-    Point Center(int i, int j) const override;
-    Point Vertex(int i, int j) const override;
-    double iArea(int i, int j) const override; 
-    double jArea(int i, int j) const override; 
-    Point iNorms(int i, int j) const override;
-    Point jNorms(int i, int j) const override; 
+    inline double Volume(int i, int j) const override;
+    inline Point Center(int i, int j) const override;
+    inline Point Vertex(int i, int j) const override;
+    inline double iArea(int i, int j) const override;
+    inline double jArea(int i, int j) const override;
+    inline Point iNorms(int i, int j) const override;
+    inline Point jNorms(int i, int j) const override;
 
 }; 
 
@@ -86,7 +86,7 @@ public:
 };
 
 
-class SquareGrid : public Grid {
+class FlatPlateGrid : public Grid {
 private:
     int Nx, Ny; 
     double Lx, Ly, dmin; 
@@ -99,7 +99,7 @@ private:
 
 public:
 
-    SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin);  
+    FlatPlateGrid(int Nx, int Ny, double Lx, double Ly, double dmin);  
 
     double Volume(int i, int j) const override;
     Point Center(int i, int j) const override;
@@ -108,8 +108,4 @@ public:
     double jArea(int i, int j) const override;
     Point iNorms(int i, int j) const override;
     Point jNorms(int i, int j) const override;
-
-
-
-
 };

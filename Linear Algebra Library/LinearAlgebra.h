@@ -49,7 +49,7 @@ Matrix operator-(const Matrix& A, const Matrix& B);
 Matrix operator*(const Matrix& A, const double& s);
 Matrix operator*(const double& s, const Matrix& A); 
 Matrix operator*(const Matrix& A, const Matrix& B);
-
+Matrix operator/(const Matrix& A, const double& s);  
 
 
 void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U);

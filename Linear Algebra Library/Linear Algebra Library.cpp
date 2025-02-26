@@ -154,6 +154,18 @@ Vector operator*(const Matrix& A, const Vector& B) {
 }
 
 
+Matrix operator/(const Matrix& A, const double& s) {
+    Matrix result;
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result[i][j] = A[i][j] / s; 
+        }
+    }
+
+    return result; 
+}
+
 Matrix operator+(const Matrix& A, const Matrix& B) {
 
     Matrix result;
