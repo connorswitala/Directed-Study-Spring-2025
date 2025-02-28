@@ -15,23 +15,23 @@ using namespace std;
 
 int main() {
 
-	FlatPlateGrid grid(Nx, Ny, 1, 1, 0.001); 
+	DoubleConeGrid grid(Nx, Ny, 1, 1, 1, 1, 15, 30, 1); 
 
-	cout << grid.jNorms(Nx - 1, 0).x << endl; 
+	cout << grid.jNorms(75, 25).x << endl; 
 
-	//string A = "plot_2D_grid.csv"; 
-	//ofstream file(A);  
+	string A = "plot_2D_grid.csv"; 
+	ofstream file(A);  
 
 
-	//file << "x_points, y_points, z_points" << endl; 
+	file << "x_points, y_points, z_points" << endl; 
 
-	//for (int i = 0; i < Nx; ++i) {
-	//	for (int j = 0; j < Ny; ++j) {
-	//		file << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl; 
-	//	}
-	//}
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+			file << grid.Vertex(i, j).x << ", " << grid.Vertex(i, j).y << ", 0" << endl;
+		}
+	}
 
-	//file.close();
+	file.close();
 
     return 0;
 }

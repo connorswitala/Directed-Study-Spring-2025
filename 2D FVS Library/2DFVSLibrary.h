@@ -21,8 +21,8 @@ constexpr double Pr = 0.71;
 
 
 // HERE //
-constexpr int Nx = 100;
-constexpr int Ny = 50;
+constexpr int Nx = 200;
+constexpr int Ny = 100;
 
 using CellTensor = array < array < Vector, Ny>, Nx>;
 using CellTesseract = array < array < Matrix, Ny>, Nx>;

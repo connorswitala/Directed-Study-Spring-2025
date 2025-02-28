@@ -19,7 +19,8 @@ progress_update(progress_update){
 	gridtype;   
 	if (dynamic_cast<RampGrid*>(&grid)) gridtype = "Ramp";  
 	else if (dynamic_cast<CylinderGrid*>(&grid)) gridtype = "Cylinder";  
-	else if (dynamic_cast<FlatPlateGrid*>(&grid)) gridtype = "Flat Plate";  
+	else if (dynamic_cast<FlatPlateGrid*>(&grid)) gridtype = "Flat Plate"; 
+	else if (dynamic_cast<DoubleConeGrid*>(&grid)) gridtype = "Double Cone"; 
 	else gridtype = "Unknown";  
 
 
@@ -81,7 +82,7 @@ Matrix Solver::inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, c
 
 	case BoundaryCondition::Outlet: 
 		
-		return onesM();  
+		return identity();  
 
 	case BoundaryCondition::IsothermalWall:  
 	 
@@ -187,7 +188,7 @@ Matrix Solver::viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, co
 
 	case BoundaryCondition::Outlet:
 
-		return onesM();
+		return identity();
 
 	case BoundaryCondition::IsothermalWall:
 
@@ -416,6 +417,9 @@ void Solver::solve_viscous_timestep() {
 			}
 		}
 	}
+
+	//cout << "U(i - 1/2) = "; displayVector(i_Fluxes[Nx - 1][0]); cout << "\t U(i + 1/2) = "; displayVector(i_Fluxes[Nx][0]); cout << endl;
+	//cout << "U(j - 1/2) = "; displayVector(j_Fluxes[Nx - 1][0]); cout << "\t U(j + 1/2) = "; displayVector(j_Fluxes[Nx - 1][1]); cout << endl;
 
 }
 
@@ -967,7 +971,7 @@ void Solver::compute_viscous_jacobians() {
 		//displayMatrix(Z);  
 		i_plus_inviscid_Jacobians[0][j] = X;
 		i_minus_inviscid_Jacobians[0][j] = Y;
-		i_Fluxes[0][j] = X * Ui + Y * Uii + M/(-dn) * dv;  
+		i_Fluxes[0][j] = X * Ui + Y * Uii - M * dv / dn;  
 	}
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on right boundary
@@ -1022,11 +1026,11 @@ void Solver::compute_viscous_jacobians() {
 			}
 		};
 
-		dx = grid.Center(Nx - 1, j).x - grid.Center(Nx - 2, j).x; 
-		dy = grid.Center(Nx - 1, j).y - grid.Center(Nx - 2, j).y;  
+		dx = grid.Center(Nx - 1, j).x - grid.Center(Nx - 2, j).x;  
+		dy = grid.Center(Nx - 1, j).y - grid.Center(Nx - 2, j).y;   
 
-		dn = sqrt(dx * dx + dy * dy);
-		dv = constoViscPrim(Uii) - constoViscPrim(Ui);
+		dn = sqrt(dx * dx + dy * dy); 
+		dv = constoViscPrim(Uii) - constoViscPrim(Ui); 
 
 
 		lp = 0.5 * (Si.uprime + fabs(Si.uprime));
@@ -1067,10 +1071,10 @@ void Solver::compute_viscous_jacobians() {
 
 		Y = outerProduct(V1_Minus, m) + outerProduct(V2_Minus, n) + lm * identity();
 
-		i_viscous_Jacobians[Nx][j] = M/(-dn) * (Erv - identity()) * N; 
+		i_viscous_Jacobians[Nx][j] = M/(-dn) * (Erv - identity()) * N;  
 		i_plus_inviscid_Jacobians[Nx][j] = X;
 		i_minus_inviscid_Jacobians[Nx][j] = Y;
-		i_Fluxes[Nx][j] = X * Ui + Y * Uii + M/(-dn) * dv;  
+		i_Fluxes[Nx][j] = X * Ui + Y * Uii - M * dv / dn; 
 	}
 
 	// Calculate Jacobians and Explicit fluxes for j-faces on bottom boundary
@@ -1078,8 +1082,7 @@ void Solver::compute_viscous_jacobians() {
 
 		Uii = U[i][0];
 		Ui = viscous_boundary_2D_U(BoundaryType.bottom, Uii, grid.jNorms(i, 0));
-		Ebv = viscous_boundary_2D_E(BoundaryType.bottom, Uii, grid.jNorms(i, 0)); 
-		
+		Ebv = viscous_boundary_2D_E(BoundaryType.bottom, Uii, grid.jNorms(i, 0)); 		
 
 		nx = grid.jNorms(i, 0).x;
 		ny = grid.jNorms(i, 0).y;
@@ -1173,7 +1176,7 @@ void Solver::compute_viscous_jacobians() {
 		j_viscous_Jacobians[i][0] = M/(-dn) * (identity() - Ebv) * N;   
 		j_plus_inviscid_Jacobians[i][0] = X;
 		j_minus_inviscid_Jacobians[i][0] = Y;
-		j_Fluxes[i][0] = X * Ui + Y * Uii + M/(-dn) * dv;  
+		j_Fluxes[i][0] = X * Ui + Y * Uii - M * dv / dn;
 
 	}
 
@@ -1276,7 +1279,7 @@ void Solver::compute_viscous_jacobians() {
 		j_viscous_Jacobians[i][Ny] = M/(-dn) * (Etv - identity()) * N; 
 		j_plus_inviscid_Jacobians[i][Ny] = X;
 		j_minus_inviscid_Jacobians[i][Ny] = Y;
-		j_Fluxes[i][Ny] = X * Ui + Y * Uii + M/(-dn) * dv;  
+		j_Fluxes[i][Ny] = X * Ui + Y * Uii - M * dv / dn;
 
 	}
 
@@ -1381,7 +1384,7 @@ void Solver::compute_viscous_jacobians() {
 			i_viscous_Jacobians[i][j] = M/(-dn) * N;  
 			i_plus_inviscid_Jacobians[i][j] = X;
 			i_minus_inviscid_Jacobians[i][j] = Y;
-			i_Fluxes[i][j] = X * Ui + Y * Uii + M/(-dn) * dv;  
+			i_Fluxes[i][j] = X * Ui + Y * Uii - M * dv / dn; 
 		} 
 	}
 
@@ -1485,7 +1488,7 @@ void Solver::compute_viscous_jacobians() {
 			j_viscous_Jacobians[i][j] = M/(-dn) * N; 
 			j_plus_inviscid_Jacobians[i][j] = X;
 			j_minus_inviscid_Jacobians[i][j] = Y;
-			j_Fluxes[i][j] = X * Ui + Y * Uii + M/(-dn) * dv; 
+			j_Fluxes[i][j] = X * Ui + Y * Uii - M * dv/dn;  
 		}
 	}
 
@@ -1812,10 +1815,9 @@ void Solver::solve_left_line_viscous() {
 	C = (j_plus_inviscid_Jacobians[i][Ny - 1] - j_viscous_Jacobians[i][Ny - 1]) * (-grid.jArea(i, Ny - 1)); 
 
 	F = i_Fluxes[i][Ny - 1] * (grid.iArea(i, Ny - 1))
-		+ i_Fluxes[i + 1][Ny - 1] * (-grid.iArea(i + 1, Ny - 1))
+		+ (i_Fluxes[i + 1][Ny - 1] + (i_minus_inviscid_Jacobians[i + 1][Ny - 1] + i_viscous_Jacobians[i + 1][Ny - 1]) * dU_old[i + 1][Ny - 1]) * (-grid.iArea(i + 1, Ny - 1))
 		+ j_Fluxes[i][Ny - 1] * (grid.jArea(i, Ny - 1))
-		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny))
-		+ (i_minus_inviscid_Jacobians[i + 1][Ny - 1] + i_viscous_Jacobians[i + 1][Ny - 1]) * (-grid.iArea(i + 1, Ny - 1)) * dU_old[i + 1][Ny - 1];   
+		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny));
 
 	alpha = A;
 	v[Ny - 1] = F / alpha;
@@ -1837,10 +1839,9 @@ void Solver::solve_left_line_viscous() {
 		C = (j_plus_inviscid_Jacobians[i][j] - j_viscous_Jacobians[i][j]) * (-grid.jArea(i, j));  
 
 		F = i_Fluxes[i][j] * (grid.iArea(i, j))
-			+ i_Fluxes[i + 1][j] * (-grid.iArea(i + 1, j))
+			+ (i_Fluxes[i + 1][j] + (i_minus_inviscid_Jacobians[i + 1][j] + i_viscous_Jacobians[i + 1][j]) * dU_old[i + 1][j]) * (-grid.iArea(i + 1, j))
 			+ j_Fluxes[i][j] * (grid.jArea(i, j))
-			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1))
-			+ (i_minus_inviscid_Jacobians[i + 1][j] + i_viscous_Jacobians[i + 1][j]) * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j]; 
+			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1));
 
 
 
@@ -1862,10 +1863,9 @@ void Solver::solve_left_line_viscous() {
 		+ (j_plus_inviscid_Jacobians[i][1] - j_viscous_Jacobians[i][1]) * grid.jArea(i, 1);												// Top
 
 	F = i_Fluxes[i][0] * (grid.iArea(i, 0))
-		+ i_Fluxes[i + 1][0] * (-grid.iArea(i + 1, 0))
+		+ (i_Fluxes[i + 1][0] + (i_minus_inviscid_Jacobians[i + 1][0] + i_viscous_Jacobians[i + 1][0]) * dU_old[i + 1][0]) * (-grid.iArea(i + 1, 0))
 		+ j_Fluxes[i][0] * (grid.jArea(i, 0))
-		+ j_Fluxes[i][1] * (-grid.jArea(i, 1))
-		+ (i_minus_inviscid_Jacobians[i + 1][0] + i_viscous_Jacobians[i + 1][0]) * (-grid.iArea(i + 1, 0)) * dU_old[i + 1][0]; 
+		+ j_Fluxes[i][1] * (-grid.jArea(i, 1));
 
 
 	alpha = A - B * g[1];
@@ -1907,12 +1907,10 @@ void Solver::solve_middle_line_viscous(const int i) {
 
 	C = (j_plus_inviscid_Jacobians[i][Ny - 1] - j_viscous_Jacobians[i][Ny - 1]) * (-grid.jArea(i, Ny - 1)); 
 
-	F = i_Fluxes[i][Ny - 1] * (grid.iArea(i, Ny - 1))
-		+ i_Fluxes[i + 1][Ny - 1] * (-grid.iArea(i + 1, Ny - 1))
-		+ j_Fluxes[i][Ny - 1] * (grid.jArea(i, Ny - 1))
-		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny))
-		+ (i_plus_inviscid_Jacobians[i][Ny - 1] + i_viscous_Jacobians[i][Ny - 1]) * (grid.iArea(i, Ny - 1)) * dU_old[i - 1][Ny - 1]
-		+ (i_minus_inviscid_Jacobians[i + 1][Ny - 1] + i_viscous_Jacobians[i + 1][Ny - 1]) * (-grid.iArea(i + 1, Ny - 1)) * dU_old[i + 1][Ny - 1]; 
+	F = (i_Fluxes[i][Ny - 1] + (i_plus_inviscid_Jacobians[i][Ny - 1] - i_viscous_Jacobians[i][Ny - 1]) * dU_old[i - 1][Ny - 1]) * (grid.iArea(i, Ny - 1)) 
+		+ (i_Fluxes[i + 1][Ny - 1] + (i_minus_inviscid_Jacobians[i + 1][Ny - 1] + i_viscous_Jacobians[i + 1][Ny - 1]) * dU_old[i + 1][Ny - 1]) * (-grid.iArea(i + 1, Ny - 1))
+		+ j_Fluxes[i][Ny - 1] * (grid.jArea(i, Ny - 1)) 
+		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny)); 
 
 	alpha = A;
 	v[Ny - 1] = F / alpha;
@@ -1931,12 +1929,10 @@ void Solver::solve_middle_line_viscous(const int i) {
 
 		C = (j_plus_inviscid_Jacobians[i][j] - j_viscous_Jacobians[i][j]) * (-grid.jArea(i, j)); 
 
-		F = i_Fluxes[i][j] * (grid.iArea(i, j))
-			+ i_Fluxes[i + 1][j] * (-grid.iArea(i + 1, j))
+		F = (i_Fluxes[i][j] + (i_plus_inviscid_Jacobians[i][j] - i_viscous_Jacobians[i][j]) * dU_old[i - 1][j]) * (grid.iArea(i, j))
+			+ (i_Fluxes[i + 1][j] + (i_minus_inviscid_Jacobians[i + 1][j] + i_viscous_Jacobians[i + 1][j]) * dU_old[i + 1][j]) * (-grid.iArea(i + 1, j))
 			+ j_Fluxes[i][j] * (grid.jArea(i, j))
-			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1))
-			+ (i_plus_inviscid_Jacobians[i][j] + i_viscous_Jacobians[i][j])* (grid.iArea(i, j)) * dU_old[i - 1][j]
-			+ (i_minus_inviscid_Jacobians[i + 1][j] + i_viscous_Jacobians[i + 1][j]) * (-grid.iArea(i + 1, j)) * dU_old[i + 1][j];  
+			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1));	
 
 
 
@@ -1954,15 +1950,13 @@ void Solver::solve_middle_line_viscous(const int i) {
 		- (Ebi * j_plus_inviscid_Jacobians[i][0] + j_minus_inviscid_Jacobians[i][0] + j_viscous_Jacobians[i][0]) * grid.jArea(i, 0) 
 		+ (j_plus_inviscid_Jacobians[i][1] - j_viscous_Jacobians[i][1]) * grid.jArea(i, 1); 
 
-	F = i_Fluxes[i][0] * (grid.iArea(i, 0))
-		+ i_Fluxes[i + 1][0] * (-grid.iArea(i + 1, 0))
+	F = (i_Fluxes[i][0] + (i_plus_inviscid_Jacobians[i][0] - i_viscous_Jacobians[i][0]) * dU_old[i - 1][0]) * (grid.iArea(i, 0))
+		+ (i_Fluxes[i + 1][0] + (i_minus_inviscid_Jacobians[i + 1][0] + i_viscous_Jacobians[i + 1][0]) * dU_old[i + 1][0]) * (-grid.iArea(i + 1, 0))
 		+ j_Fluxes[i][0] * (grid.jArea(i, 0))
-		+ j_Fluxes[i][1] * (-grid.jArea(i, 1))
-		+ (i_plus_inviscid_Jacobians[i][0] + i_viscous_Jacobians[i][0]) * (grid.iArea(i, 0)) * dU_old[i - 1][0]
-		+ (i_minus_inviscid_Jacobians[i + 1][0] + i_viscous_Jacobians[i + 1][0]) * (-grid.iArea(i + 1, 0)) * dU_old[i + 1][0]; 
+		+ j_Fluxes[i][1] * (-grid.jArea(i, 1));
 
 
-	alpha = A - B * g[1];
+	alpha = A - B * g[1]; 
 	v[0] = (F - B * v[1]) / alpha;
 
 	// Calculate dU
@@ -2004,11 +1998,10 @@ void Solver::solve_right_line_viscous() {
 
 	C = (j_plus_inviscid_Jacobians[i][Ny - 1] - j_viscous_Jacobians[i][Ny - 1]) * (-grid.jArea(i, Ny - 1)); 
 
-	F = i_Fluxes[i][Ny - 1] * (grid.iArea(i, Ny - 1))
+	F = (i_Fluxes[i][Ny - 1] + (i_plus_inviscid_Jacobians[i][Ny - 1] - i_viscous_Jacobians[i][Ny - 1]) * dU_old[i - 1][Ny - 1]) * (grid.iArea(i, Ny - 1))
 		+ i_Fluxes[i + 1][Ny - 1] * (-grid.iArea(i + 1, Ny - 1))
 		+ j_Fluxes[i][Ny - 1] * (grid.jArea(i, Ny - 1))
-		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny))
-		+ (i_plus_inviscid_Jacobians[i][Ny - 1] + i_viscous_Jacobians[i][Ny - 1]) * (grid.iArea(i, Ny - 1)) * dU_old[i - 1][Ny - 1];
+		+ j_Fluxes[i][Ny] * (-grid.jArea(i, Ny));
 
 	alpha = A;
 	v[Ny - 1] = F / alpha;
@@ -2029,13 +2022,10 @@ void Solver::solve_right_line_viscous() {
 
 		C = (j_plus_inviscid_Jacobians[i][j] - j_viscous_Jacobians[i][j]) * (-grid.jArea(i, j)); 
 
-		F = i_Fluxes[i][j] * (grid.iArea(i, j))
+		F = (i_Fluxes[i][j] + (i_plus_inviscid_Jacobians[i][j] - i_viscous_Jacobians[i][j]) * dU_old[i - 1][j]) * (grid.iArea(i, j))
 			+ i_Fluxes[i + 1][j] * (-grid.iArea(i + 1, j))
 			+ j_Fluxes[i][j] * (grid.jArea(i, j))
-			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1))
-			+ (i_plus_inviscid_Jacobians[i][j] + i_viscous_Jacobians[i][j]) * (grid.iArea(i, j)) * dU_old[i - 1][j]; 
-
-
+			+ j_Fluxes[i][j + 1] * (-grid.jArea(i, j + 1)); 
 
 		alpha = A - B * g[j + 1];
 		g[j] = C / alpha;
@@ -2052,11 +2042,10 @@ void Solver::solve_right_line_viscous() {
 		- (Ebi * j_plus_inviscid_Jacobians[i][0] + j_minus_inviscid_Jacobians[i][0] + j_viscous_Jacobians[i][0]) * grid.jArea(i, 0)					// Bottom 
 		+ (j_plus_inviscid_Jacobians[i][1] - j_viscous_Jacobians[i][1]) * grid.jArea(i, 1);															// Top 
 
-	F = i_Fluxes[i][0] * (grid.iArea(i, 0)) 
-		+ i_Fluxes[i + 1][0] * (-grid.iArea(i + 1, 0)) 
+	F = (i_Fluxes[i][0] + (i_plus_inviscid_Jacobians[i][0] - i_viscous_Jacobians[i][0]) * dU_old[i - 1][0]) * (grid.iArea(i, 0))  
+		+ i_Fluxes[i + 1][0] * (-grid.iArea(i + 1, 0))
 		+ j_Fluxes[i][0] * (grid.jArea(i, 0))
-		+ j_Fluxes[i][1] * (-grid.jArea(i, 1))
-		+ (i_plus_inviscid_Jacobians[i][0] + i_viscous_Jacobians[i][0]) * (grid.iArea(i, 0)) * dU_old[i - 1][0]; 
+		+ j_Fluxes[i][1] * (-grid.jArea(i, 1));
 
 
 	alpha = A - B * g[1];
@@ -2190,10 +2179,10 @@ void Solver::write_1d_csv(const string& filename) {
 	
 	ofstream file(filename);
 
-	file << "density, u velocity, v velocity, pressure, Mach, Temperature, y_points" << endl;
+	file << "density, u velocity, pressure, Mach, Temperature, y_points" << endl;
 
 	for (int j = 0; j < Ny; ++j) { 
-		file << density[j]/INLET.rho << ", " << u_velocity[j]/INLET.u << ", " << v_velocity[j]/INLET.v << ", " << pressure[j]/INLET.p 
+		file << density[j]/INLET.rho << ", " << u_velocity[j]/INLET.u << ", "  << pressure[j]/INLET.p 
 			<< ", " << Mach[j]/INLET.M << ", " << Temperature[j]/INLET.T << ", "  << grid.Center(Nx / 2, j).y << endl;  
 	}
 	
