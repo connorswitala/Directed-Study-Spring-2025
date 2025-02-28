@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\CMakeFiles\f498437ea6eca3d26592fc3aedcd0cfe\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{3E126D15-AFBE-3C4B-9903-4C64F689D9CE}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -40,7 +40,7 @@ public:
 class RampGrid : public Grid {
 private:
     int Nx, Ny;
-    double L1, L2, L3, inlet_height, ramp_angle;
+    double l1, L2, L3, inlet_height, ramp_angle;
 
     vector<vector<Point>> vertices;
     vector<vector<Point>> cellCenters;
@@ -51,13 +51,13 @@ private:
 public:
     RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet_height, double ramp_angle);
 
-    double Volume(int i, int j) const override;
-    Point Center(int i, int j) const override;
-    Point Vertex(int i, int j) const override;
-    double iArea(int i, int j) const override; 
-    double jArea(int i, int j) const override; 
-    Point iNorms(int i, int j) const override;
-    Point jNorms(int i, int j) const override; 
+    inline double Volume(int i, int j) const override;
+    inline Point Center(int i, int j) const override;
+    inline Point Vertex(int i, int j) const override;
+    inline double iArea(int i, int j) const override;
+    inline double jArea(int i, int j) const override;
+    inline Point iNorms(int i, int j) const override;
+    inline Point jNorms(int i, int j) const override;
 
 }; 
 
@@ -86,7 +86,7 @@ public:
 };
 
 
-class SquareGrid : public Grid {
+class FlatPlateGrid : public Grid {
 private:
     int Nx, Ny; 
     double Lx, Ly, dmin; 
@@ -99,7 +99,7 @@ private:
 
 public:
 
-    SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin);  
+    FlatPlateGrid(int Nx, int Ny, double Lx, double Ly, double dmin);  
 
     double Volume(int i, int j) const override;
     Point Center(int i, int j) const override;
@@ -108,8 +108,28 @@ public:
     double jArea(int i, int j) const override;
     Point iNorms(int i, int j) const override;
     Point jNorms(int i, int j) const override;
+};
 
+class DoubleConeGrid : public Grid { 
+private:
+    int Nx, Ny;
+    double theta1, theta2, l1, l2, l3, l4, inlet_height;
 
+    vector<vector<Point>> vertices;
+    vector<vector<Point>> cellCenters;
+    vector<vector<Point>> iNormals;
+    vector<vector<Point>> jNormals;
+    vector<vector<double>> iAreas, jAreas, cellVolumes;
 
+public:
 
+   DoubleConeGrid(int Nx, int Ny, double l1, double l2, double l3, double l4, double theta1, double theta2, double inlet_height); 
+
+    double Volume(int i, int j) const override;
+    Point Center(int i, int j) const override;
+    Point Vertex(int i, int j) const override;
+    double iArea(int i, int j) const override;
+    double jArea(int i, int j) const override;
+    Point iNorms(int i, int j) const override; 
+    Point jNorms(int i, int j) const override;
 };

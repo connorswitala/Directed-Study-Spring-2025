@@ -15,10 +15,9 @@ using namespace std;
 
 int main() {
 
-	SquareGrid grid(Nx, Ny, 1, 1, 0.01);
+	DoubleConeGrid grid(Nx, Ny, 1, 1, 1, 1, 15, 30, 1); 
 
-    cout << grid.jNorms(Nx/2 - 1, 0).x << endl;       
-
+	cout << grid.jNorms(75, 25).x << endl; 
 
 	string A = "plot_2D_grid.csv"; 
 	ofstream file(A);  
@@ -28,7 +27,7 @@ int main() {
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {
-			file << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl; 
+			file << grid.Vertex(i, j).x << ", " << grid.Vertex(i, j).y << ", 0" << endl;
 		}
 	}
 

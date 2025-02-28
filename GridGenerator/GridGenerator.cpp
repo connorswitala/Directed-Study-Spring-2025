@@ -10,12 +10,12 @@ double NewtonMethod(double max_dist, int n_points, double d_min) {
 	double k = 1, k_new = 1 / 2, ratio = fabs(k - k_new); 
 	double func, func_prime;
 
-	while (ratio < 1e-8) {
-		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1); 
-		func_prime = -max_dist * ( ((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)) );
+	while (ratio >= 0.00000000001) {
+		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1);
+		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)));
 		k_new = k - func / func_prime; 
-		ratio = abs(k - k_new); 
-		k = k_new; 
+		ratio = fabs(k - k_new); 
+		k = k_new;
 	}
 
 	return k; 
@@ -26,7 +26,7 @@ double NewtonMethod(double max_dist, int n_points, double d_min) {
 /////////////////////////////////////////////////
 
 RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet_height, double ramp_angle)
-	: Nx(Nx), Ny(Ny), L1(L1), L2(L2), L3(L3), inlet_height(inlet_height), ramp_angle(ramp_angle),
+	: Nx(Nx), Ny(Ny), l1(L1), L2(L2), L3(L3), inlet_height(inlet_height), ramp_angle(ramp_angle),
 	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)),
 	cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny)), jAreas(Nx, vector<double>(Ny + 1)),
 	iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
@@ -80,7 +80,7 @@ RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet
 
 		// y vertices for section 1
 		if (L <= L1) {
-			dy = inlet_height / Ny;
+			dy = inlet_height / (Ny + 1);
 			for (j = 0; j <= Ny; ++j) {
 				vertices[i][j].y = j * dy;
 			}
@@ -90,18 +90,12 @@ RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet
 		else if ((L > L1) && (L <= (L1 + L2))) {
 
 			// Changes dy based on section
-			if (vertices[i - 1][0].x == L1) {
-				dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
-			}
-			else if ((L + dx > L1 + L2) && (L < L1 + L2 + dx)) {
-				dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
-			}
-			else {
-				dy_ramp = dx * tan(ang_rads);
-			}
+			if (L >= L1 && L < L1 + L2 + dx)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
+
+			if (L == L1 + L2) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads); 
 
 			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
-			dy = (inlet_height - vertices[i][0].y) / Ny;
+			dy = (inlet_height - vertices[i][0].y) / (Ny + 1);
 
 			for (j = 1; j <= Ny; ++j) {
 				vertices[i][j].y = vertices[i][0].y + j * dy;
@@ -111,7 +105,7 @@ RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet
 		// y vertives for section 3
 		else {
 			vertices[i][0].y = L2 * tan(ang_rads);
-			dy = (inlet_height - L2 * tan(ang_rads)) / Ny;
+			dy = (inlet_height - L2 * tan(ang_rads)) / (Ny + 1); 
 
 			for (j = 1; j <= Ny; ++j) {
 				vertices[i][j].y = L2 * tan(ang_rads) + j * dy;
@@ -223,9 +217,8 @@ CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, do
 
 		R_max = R1 + (R2 - R1) * cos(theta[i]);
 		k1 = NewtonMethod(R_max, Nr, dr_min);
-
 		for (int j = 1; j < Nr; ++j) {
-			r[i][j] = r[i][0] + R_max * ((exp(k1 *j / (Nr - 1)) - 1) / (exp(k1) - 1));
+			r[i][j] = r[i][0] + R_max * ((exp(k1 * j / (Nr - 1)) - 1) / (exp(k1) - 1));
 		}
 
 	}
@@ -320,11 +313,11 @@ Point CylinderGrid::jNorms(int i, int j) const {
 /////////////// Square Grid functions /////////////
 ///////////////////////////////////////////////////
 
-SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
+FlatPlateGrid::FlatPlateGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 	: Nx(Nx), Ny(Ny), Lx(Lx), Ly(Ly), dmin(dmin),   
 	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)),
-	cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx, vector<double>(Ny, 0.0)), 
-	jAreas(Nx, vector<double>(Ny, 0.0)), iNormals(Nx, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny)) {   
+	cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny, 0.0)), 
+	jAreas(Nx, vector<double>(Ny + 1, 0.0)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {    
 
 
 	int i, j;
@@ -340,7 +333,6 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 			vertices[i][j].y = 0 + Ly * ((exp(k * j / Ny) - 1) / (exp(k) - 1));   
 		}
 	}
-
 	
 	// Edge vectors
 	Point AB, BC, CD, DA;
@@ -360,9 +352,187 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 		}
 	}
 
+
+
 	// Calculates geometries for i-faces
 	for (i = 0; i <= Nx; ++i) {
 		for (j = 0; j < Ny; ++j) {
+
+			AB = { vertices[i][j + 1].x - vertices[i][j].x, vertices[i][j + 1].y - vertices[i][j].y };
+
+			iAreas[i][j] = sqrt(AB.x * AB.x + AB.y * AB.y);
+
+			iNormals[i][j].x = AB.y / fabs(iAreas[i][j]);
+			iNormals[i][j].y = AB.x / fabs(iAreas[i][j]);
+		}
+	}
+
+
+	// Calculates geometries for j-faces
+	for (i = 0; i < Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+
+			CD = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+
+			jAreas[i][j] = sqrt(CD.x * CD.x + CD.y * CD.y);
+
+			jNormals[i][j].x = CD.y / fabs(jAreas[i][j]);
+			jNormals[i][j].y = CD.x / fabs(jAreas[i][j]);
+		}
+	}
+
+
+
+}
+
+
+
+Point FlatPlateGrid::FlatPlateGrid::Center(int i, int j) const {
+	return cellCenters[i][j];
+}
+
+Point FlatPlateGrid::FlatPlateGrid::Vertex(int i, int j) const {
+	return vertices[i][j];
+}
+
+double FlatPlateGrid::FlatPlateGrid::Volume(int i, int j) const {
+	return cellVolumes[i][j];
+}
+
+double FlatPlateGrid::FlatPlateGrid::iArea(int i, int j) const {
+	return iAreas[i][j];
+}
+
+double FlatPlateGrid::FlatPlateGrid::jArea(int i, int j) const {
+	return jAreas[i][j];
+}
+
+
+Point FlatPlateGrid::FlatPlateGrid::iNorms(int i, int j) const {
+	return iNormals[i][j];
+}
+Point FlatPlateGrid::FlatPlateGrid::jNorms(int i, int j) const {
+	return jNormals[i][j];
+}
+ 
+
+
+///////////////////////////////////////////////////
+/////////////// Double Cone Grid functions ////////
+///////////////////////////////////////////////////
+
+DoubleConeGrid::DoubleConeGrid(int Nx, int Ny, double l1, double l2, double l3, double l4, double theta1, double theta2, double inlet_height) : Nx(Nx), Ny(Ny),
+l1(l1), l2(l2), l3(l3), l4(l4), theta1(theta1), theta2(theta2), inlet_height(inlet_height), vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)),
+cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny, 0.0)), jAreas(Nx, vector<double>(Ny + 1, 0.0)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
+
+	int i, j;
+
+	// Important constants
+	double deg_to_rads = 3.141592653 / 180.0;
+
+	// Define lengths 
+	double L_total = l1 + l2 + l3 + l4;  
+	double dx = L_total / (Nx + 1);
+	double dy = inlet_height / (Ny + 1);
+	double L, dy_ramp;
+
+	// Create x vertices
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+			vertices[i][j].x = i * dx;
+		}
+	}
+
+	// Snap x-vertices to important boundary points.
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+			if (vertices[i][j].x > l1 && vertices[i][j].x < l1 + dx) { 
+				vertices[i][j].x = l1; 
+			}
+			else if (vertices[i][j].x > l1 + l2 && vertices[i][j].x < l1 + l2 + dx) { 
+				vertices[i][j].x = l1 + l2;  
+			}
+			else if (i == Nx) {
+				vertices[i][j].x = L_total; 
+			}
+		}
+	}
+
+	// Create grid.
+	for (i = 0; i <= Nx; ++i) {
+
+		L = vertices[i][0].x;
+
+		// y vertices for section 1
+		if (L <= l1) { 
+			dy = inlet_height / (Ny + 1);
+			for (j = 0; j <= Ny; ++j) {
+				vertices[i][j].y = j * dy;
+			}
+		}
+
+		// y vertices for section 2
+		else if ((L > l1) && (L <= (l1 + l2))) { 
+
+			// Changes dy based on section
+			if (L >= l1 && L < l1 + l2 + dx)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta1 * deg_to_rads);
+		
+			if (L == l1 + l2) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta1 * deg_to_rads); 		 
+
+			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
+			dy = (inlet_height - vertices[i][0].y) / (Ny + 1); 
+
+			for (j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = vertices[i][0].y + j * dy;
+			}
+		}
+
+		// y vertices for section 3
+		else if ((L > l1 + l2) && (L <= L_total - l4) ) {
+
+			// Changes dy based on section
+			if (L >= l2 && L < L_total)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);    
+
+			if (L == L_total) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);   
+
+			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
+			dy = (inlet_height - vertices[i][0].y) / (Ny + 1);
+
+			for (j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = vertices[i][0].y + j * dy;
+			}
+		}
+
+		else {
+			dy = (inlet_height - (l1 * tan(theta1 * deg_to_rads) + l2 * tan(theta2 * deg_to_rads))) / (Ny + 1);
+			for (j = 0; j <= Ny; ++j) {
+				vertices[i][j].y = l1 * tan(theta1 * deg_to_rads) + l2 * tan(theta2 * deg_to_rads) + j * dy; 
+			}
+		}
+
+	}
+
+	// Edge vectors
+	Point AB, BC, CD, DA;
+
+	// Calculates cell centers and volumes
+	for (i = 0; i < Nx; ++i) {
+		for (j = 0; j < Ny; ++j) {
+			DA = { vertices[i][j].x - vertices[i][j + 1].x, vertices[i][j].y - vertices[i][j + 1].y };
+			AB = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+			BC = { vertices[i + 1][j + 1].x - vertices[i + 1][j].x, vertices[i + 1][j + 1].y - vertices[i + 1][j].y };
+			CD = { vertices[i][j + 1].x - vertices[i + 1][j + 1].x, vertices[i][j + 1].y - vertices[i + 1][j + 1].y };
+
+			cellCenters[i][j] = { (vertices[i][j].x + vertices[i + 1][j].x + vertices[i + 1][j + 1].x + vertices[i][j + 1].x) / 4,
+									(vertices[i][j].y + vertices[i + 1][j].y + vertices[i + 1][j + 1].y + vertices[i][j + 1].y) / 4 };
+
+			cellVolumes[i][j] = 0.5 * fabs(DA.x * AB.y - DA.y * AB.x) + 0.5 * fabs(BC.x * CD.y - BC.y * CD.x);
+		}
+	}
+
+	// Calculates geometries for i-faces
+	for (i = 0; i <= Nx; ++i) { 
+		for (j = 0; j < Ny; ++j) { 
 
 			AB = { vertices[i][j + 1].x - vertices[i][j].x, vertices[i][j + 1].y - vertices[i][j].y };
 
@@ -386,37 +556,32 @@ SquareGrid::SquareGrid(int Nx, int Ny, double Lx, double Ly, double dmin)
 		}
 	}
 
-
-
 }
 
-
-
-Point SquareGrid::SquareGrid::Center(int i, int j) const {
+Point DoubleConeGrid::DoubleConeGrid::Center(int i, int j) const { 
 	return cellCenters[i][j];
 }
 
-Point SquareGrid::SquareGrid::Vertex(int i, int j) const {
+Point DoubleConeGrid::DoubleConeGrid::Vertex(int i, int j) const {
 	return vertices[i][j];
 }
 
-double SquareGrid::SquareGrid::Volume(int i, int j) const {
+double DoubleConeGrid::DoubleConeGrid::Volume(int i, int j) const {
 	return cellVolumes[i][j];
 }
 
-double SquareGrid::SquareGrid::iArea(int i, int j) const {
+double DoubleConeGrid::DoubleConeGrid::iArea(int i, int j) const {
 	return iAreas[i][j];
 }
 
-double SquareGrid::SquareGrid::jArea(int i, int j) const {
+double DoubleConeGrid::DoubleConeGrid::jArea(int i, int j) const {
 	return jAreas[i][j];
 }
 
 
-Point SquareGrid::SquareGrid::iNorms(int i, int j) const {
+Point DoubleConeGrid::DoubleConeGrid::iNorms(int i, int j) const {
 	return iNormals[i][j];
 }
-Point SquareGrid::SquareGrid::jNorms(int i, int j) const {
+Point DoubleConeGrid::DoubleConeGrid::jNorms(int i, int j) const {
 	return jNormals[i][j];
 }
- 
