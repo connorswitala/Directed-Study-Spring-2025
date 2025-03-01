@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveNugetPackages>false</ResolveNugetPackages>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{868434FF-ED1E-3123-9048-CF3E8A06622B}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/Connor/source/repos/Directed Study Spring 2025/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Connor/source/repos/Directed Study Spring 2025" "-BC:/Users/Connor/source/repos/Directed Study Spring 2025/build" --check-stamp-file "C:/Users/Connor/source/repos/Directed Study Spring 2025/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCXXCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeRCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/Connor/source/repos/Directed Study Spring 2025/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Connor/source/repos/Directed Study Spring 2025" "-BC:/Users/Connor/source/repos/Directed Study Spring 2025/build" --check-stamp-file "C:/Users/Connor/source/repos/Directed Study Spring 2025/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCXXCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeRCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/Connor/source/repos/Directed Study Spring 2025/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Connor/source/repos/Directed Study Spring 2025" "-BC:/Users/Connor/source/repos/Directed Study Spring 2025/build" --check-stamp-file "C:/Users/Connor/source/repos/Directed Study Spring 2025/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCXXCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeRCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/Connor/source/repos/Directed Study Spring 2025/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Connor/source/repos/Directed Study Spring 2025" "-BC:/Users/Connor/source/repos/Directed Study Spring 2025/build" --check-stamp-file "C:/Users/Connor/source/repos/Directed Study Spring 2025/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeCXXCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeRCCompiler.cmake;C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\4.0.0-rc2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Connor\source\repos\Directed Study Spring 2025\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\ZERO_CHECK.vcxproj">
+      <Project>{9675182D-BBA4-3B13-8CC0-61B6ABE2D41D}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\DPLR Finite Volume\DPLRFiniteVolume.vcxproj">
+      <Project>{E46DDAE8-FFDD-3A02-A3D7-59162B3D8E3A}</Project>
+      <Name>DPLRFiniteVolume</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\2D FVS Library\FVSLibrary.vcxproj">
+      <Project>{718FBFA0-1C03-3A7D-99E7-C9FCC8382BA7}</Project>
+      <Name>FVSLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\GridGenerator\GridGenerator.vcxproj">
+      <Project>{2EE68B6E-D2FC-3185-91B8-B764355C12BD}</Project>
+      <Name>GridGenerator</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\Linear Algebra Library\LinearAlgebraLibrary.vcxproj">
+      <Project>{2C230BA7-FD0F-3AFC-BBD5-1AEF76DF6AD7}</Project>
+      <Name>LinearAlgebraLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

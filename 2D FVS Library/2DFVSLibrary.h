@@ -21,8 +21,8 @@ constexpr double Pr = 0.71;
 
 
 // HERE //
-constexpr int Nx = 200;
-constexpr int Ny = 100;
+constexpr int Nx = 100;
+constexpr int Ny = 50;
 
 using CellTensor = array < array < Vector, Ny>, Nx>;
 using CellTesseract = array < array < Matrix, Ny>, Nx>;
@@ -40,7 +40,8 @@ enum class BoundaryCondition {
 	AdiabaticWall, 
 	Inlet,
 	Outlet,
-	Symmetry
+	Symmetry,
+	Undefined
 };
 
 struct BoundaryConditions {
@@ -53,6 +54,15 @@ struct BoundaryConditions {
 	BoundaryConditions(BoundaryCondition left, BoundaryCondition right, BoundaryCondition bottom, BoundaryCondition top) : left(left), right(right), bottom(bottom), top(top) {}
 
 };
+
+inline BoundaryCondition getBoundaryCondition(const string& input) {
+	if (input == "inlet") return BoundaryCondition::Inlet;
+	if (input == "outlet") return BoundaryCondition::Outlet;
+	if (input == "symmetry") return BoundaryCondition::Symmetry;
+	if (input == "adiabatic") return BoundaryCondition::AdiabaticWall;
+	if (input == "isothermal") return BoundaryCondition::IsothermalWall;
+	return BoundaryCondition::Undefined;  
+}
 
 struct inlet_conditions {
 	double rho, u, v, p, T, M, a;
@@ -123,16 +133,16 @@ private:
 	string gridtype; 
 
 	BoundaryConditions BoundaryType; 
-	const double CFL, Tw; 
+	double CFL, Tw; 
 	Vector V_inlet, U_inlet;  
 	inlet_conditions INLET; 
-	const int progress_update;  
+	int progress_update;  
 
 public: 
 
 	double outer_residual;
 
-	Solver(const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, const double CFL, const double Tw, const int& progress_update); 
+	Solver(const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update); 
 
 	Vector primtoCons(const Vector& V);  
 	Vector constoPrim(const Vector& U);

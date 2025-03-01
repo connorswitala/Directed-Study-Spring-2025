@@ -493,7 +493,7 @@ cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny, 0.0)), jA
 			// Changes dy based on section
 			if (L >= l2 && L < L_total)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);    
 
-			if (L == L_total) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);   
+			if (L == L_total) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);    
 
 			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
 			dy = (inlet_height - vertices[i][0].y) / (Ny + 1);

@@ -20,71 +20,117 @@ int main() {
 
 	auto start = TIME;
 
-	inlet_conditions INLET; 
+	double l1, l2, l3, l4, l5, R1, R2, R3, theta1, theta2, d_min;  
+	int progress_update; 
 
-	INLET.p = 10000.0,						// Inlet Pressure (SET)
-	INLET.T = 300.0,						// Inlet Temperature (SET)
-	INLET.M = 2.5,							// Inlet Mach speed (SET)
-	INLET.a = sqrt(gamma * R * INLET.T),	// Inlet Sound Speed
-	INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
-	INLET.v = 0,							// Inlet v-velocity
-	INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
-
-	
 	double Wall_Temp = 300; // For Isothermal Wall boundary condition only (viscous solver). 
+	double CFL = 1.0; // Pretty much only works at 1.0
 
-	const double CFL = 2.0; // Pretty much only works at 1.0
+	inlet_conditions INLET; 
+	unique_ptr<Grid> gridg;  
 
-	// Different grids and boundary conditions are detailed below (I just swap between these two). 
-	//
-	// When declaring BoundaryConditions BCs, the order is (Left Boundary, Right Boundary, Bottom Boundary, Top Boundary)
-	//
-	// Boundary Conditions are: Inlet, Outlet, Symmetry, Adiabatic Wall (No heat transfer), Isothermal Wall (constant wall temperature)
-	//
-	// There are currently four possible grids. The cylinder grid is a little nonsensical at the moment. 
+	string solver_type, grid_type, leftBC, rightBC, bottomBC, topBC, preset; 
+
+	cout << "\033[34mRun the preset solver or enter your own (type 'preset' for preset or 'set' for set your own): \033[0m"; cin >> preset; cout << endl; 
+
+	if (preset == "set") {
+
+		cout << "\033[34m'viscous or 'inviscid' solver: \033[0m";	cin >> solver_type; cout << endl;
+		cout << "\033[34mGrid type (enter 'ramp' for ramp, 'cylinder' for cylinder, 'plate' for flat plate, 'double' for double ramp): \033[0m";	cin >> grid_type; cout << endl; 
+
+		if (grid_type == "ramp") {
+			cout << "\033[31mRamp inlet length: \033[0m"; cin >> l1;  cout << "\033[31mRamp length: \033[0m"; cin >> l2; cout << "\033[31mRamp outlet length: \033[0m"; cin >> l3; 
+			cout << "\033[31mRamp inlet height: \033[0m"; cin >> l4; cout << "\033[31mRamp angle (in degrees): \033[0m"; cin >> theta1;
+			gridg = make_unique<RampGrid>(Nx, Ny, l1, l2, l3, l4, theta1); 
+		}
+
+		if (grid_type == "cylinder") {
+			cout << "\033[31mCylinder radius: \033[0m"; cin >> R1;  cout << "\033[31mMinimum grid radius: \033[0m"; cin >> R2; cout << "\033[31mMaximum grid radius: \033[0m"; cin >> R3; cout << "\033[31mMinumum cell thickness: \033[0m"; cin >> d_min;
+			gridg = make_unique<CylinderGrid>(Nx, Ny, R1, R2, R3, d_min, pi / 2, 3 * pi / 2); 
+		}
+
+		if (grid_type == "plate") {
+			cout << "\033[31mx-length: \033[0m"; cin >> l1;  cout << "\033[31my-length: \033[0m"; cin >> l2; cout << "\033[31mMinimum cell thickness: \033[0m"; cin >> d_min;
+			gridg = make_unique<FlatPlateGrid>(Nx, Ny, l1, l2, d_min); 
+		}
+
+		if (grid_type == "double") {
+			cout << "\033[31mRamp inlet length: \033[0m"; cin >> l1;  cout << "\033[31mFirst ramp length: \033[0m"; cin >> l2; cout << "\033[31mSecond ramp length: \033[0m"; cin >> l3; cout << "\033[31mRamp outlet length: \033[0m"; cin >> l4;
+			cout << "\033[31mRamp inlet height: "; cin >> l5; cout << "\033[31mFirst ramp angle (in degrees): "; cin >> theta1; cout << "\033[31mSecond ramp angle (in degrees): \033[0m"; cin >> theta2;
+			gridg = make_unique<DoubleConeGrid>(Nx, Ny, l1, l2, l3, l4, theta1, theta2, l5); 
+		}
+
+
+		cout << endl << "\033[32mAvailable boundary conditions are: 'inlet', 'outlet', 'symmetry', 'adiabatic wall', 'isothermal wall'" << endl << endl << "Left boundary condition: \033[0m";	cin >> leftBC;
+		cout << "\033[32mRight boundary condition: \033[0m";	cin >> rightBC;
+		cout << "\033[32mBottom boundary condition: \033[0m";	cin >> bottomBC;
+		cout << "\033[32mTop boundary condition: \033[0m"; cin >> topBC; 
+		
+		
+		cout << endl << "\033[35mInput flow properties : \033[0m" << endl << "\033[35mPressure: \033[0m"; cin >> INLET.p; 
+		cout << "\033[35mTemperature: \033[0m"; cin >> INLET.T;	cout << "\033[35mMach: \033[0m"; cin >> INLET.M;
+
+
+		cout << "\033[35mWall Temperature: \033[0m"; cin >> Wall_Temp; cout << endl;
+		cout << "\033[34mAfter how many iterations do you want a staus update: \033[0m"; cin >> progress_update; cout << endl;
+
+		INLET.a = sqrt(gamma * R * INLET.T),	// Inlet Sound Speed
+		INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
+		INLET.v = 0,							// Inlet v-velocity
+		INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
+
+		BoundaryConditions BCs(getBoundaryCondition(leftBC), getBoundaryCondition(rightBC), getBoundaryCondition(bottomBC), getBoundaryCondition(topBC)); 
+
+		// Sets up the solver class with inlet and boundary conditions, grid type, CFL, wall temperature, and the iteration number for progress     
+		Solver solver(INLET, *gridg, BCs, CFL, Wall_Temp, progress_update);  
+		 
+		// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
+		if (solver_type == "inviscid") solver.solve_inviscid();
+		else solver.solve_viscous(); 
+	}
+
+	else if (preset == "preset") {
+
+		INLET.p = 10000.0,						// Inlet Pressure (SET)
+		INLET.T = 300.0,						// Inlet Temperature (SET)
+		INLET.M = 2.5,							// Inlet Mach speed (SET)
+		INLET.a = sqrt(gamma * R * INLET.T),	// Inlet Sound Speed
+		INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
+		INLET.v = 0,							// Inlet v-velocity
+		INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
+
+		int progress_update = 50;  // This number prints a status update after the number of iterations declared here. 
+		CFL = 1.0; 
+
+		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);     
+		RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);  
+
+		//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
+		//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
+
+		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);   
+		//FlatPlateGrid grid(Nx, Ny, 1e-3, 1e-3, 5e-6);  
+
+		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
+		//DoubleConeGrid grid(Nx, Ny, 1, 1, 1, 1, 25, 50, 2.5);  
+
 	
 
-	// (1) Ramp Grid - First input: Nx, Second input: Ny, Third input: Length of entrance section, Fourth input: Length of ramp section, Fifth input: Length of exit section
-	// Sixth input: Height of domain, Seventh input: Angle of ramp in degrees.
-	// 
-	// 
-	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
-	//RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);
-	
+		// Sets up the solver class with inlet and boundary conditions, grid type, CFL, wall temperature, and the iteration number for progress     
+		Solver solver(INLET, grid, BCs, CFL, Wall_Temp, progress_update); 
 
-	// (2) Cylinder Grid - First input: Nx, Second input: Ny, Third input: Cylinder radius, Fourth input: Radius of fluid domain at theta = pi, 
-	// Fifth input: Thickness of first layer of cells around cylinder.  Sixth Input: Use pi / 2, Seventh input: Use 3 * pi / 2 
-	//
-	// 
-	//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
-	//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
+		// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
+		solver.solve_inviscid(); 
 
+	}
 
-	// (3) Flate Plate - First input: Nx, Second input: Ny, Third input: Length in x-direction, Fourth input: Length in y-diretion, Fifth input: First layer cell thickness
-	//
-	//
-	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);   
-	//FlatPlateGrid grid(Nx, Ny, 1e-3, 1e-3, 5e-6);  
+	else {
+		cout << "Unknown solver type";
+	}
 
-	
-	// (4) Double Cone (Essentially just double ramp) - First input: Nx, Second input: Ny, Third Input, Length of entrance section, Fourth input: Length of first angled ramp section,
-	// Fifth input: Length of second angled ramp section, Sixth input: Length of exit section, Seventh input: Angle in degrees of first ramp, Eigth input: Angle in degrees of second ramp,
-	// Ninth input: domain height. 
-	//
-	//
-	BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
-	DoubleConeGrid grid(Nx, Ny, 1, 1, 1, 1, 25, 50, 2.5);  
+	printMemoryUsage(); // Prints maximum memory usage during the program.
 
-	const int progress_update = 25;  // This number prints a status update after the number of iterations declared here.
-
-	// Sets up the solver class with inlet and boundary conditions, grid type, CFL, wall temperature, and the iteration number for progress     
-	Solver solver(INLET, grid, BCs, CFL, Wall_Temp, progress_update); 
-
-	// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
-	solver.solve_inviscid();    
-
-	printMemoryUsage(); // Prints maximum memory usage during the program. 
-
+	cin.get(); 
 	return 0;
 }
 

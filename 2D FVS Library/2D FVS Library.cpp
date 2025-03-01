@@ -6,7 +6,7 @@
 #include "2DFVSLibrary.h"
 
 
-Solver::Solver(const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, const double CFL, const double Tw, const int& progress_update) : Tw(Tw), INLET(INLET), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), 
+Solver::Solver(const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update) : Tw(Tw), INLET(INLET), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), 
 i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), 
 j_minus_inviscid_Jacobians(j_minus_inviscid_Jacobians), i_viscous_Jacobians(i_viscous_Jacobians), j_viscous_Jacobians(j_viscous_Jacobians),  gridtype(gridtype), dt(dt), CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual),
 progress_update(progress_update){
@@ -307,7 +307,7 @@ void Solver::compute_dt() {
 
 void Solver::solve_inviscid () { 
 
-	cout << "Running Inviscid DPLR for " << Nx << " by " << Ny << " " << gridtype << " with a CFL of " << fixed << setprecision(2) << CFL << "..." << "\n\n";
+	cout << "\033[33mRunning Inviscid DPLR for " << Nx << " by " << Ny << " " << gridtype << " with a CFL of " << fixed << setprecision(2) << CFL << "...\033[0m" << "\n\n";
 	string filename = "Inviscid " + to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
 	
 	auto start = TIME; 
@@ -349,7 +349,7 @@ void Solver::solve_inviscid () {
 
 void Solver::solve_viscous() {
 
-	cout << "Running Viscous DPLR for " << Nx << " by " << Ny << " " << gridtype << " with a CFL of " << fixed << setprecision(2) << CFL << "..." << "\n\n"; 
+	cout << "\033[33mRunning Viscous DPLR for " << Nx << " by " << Ny << " " << gridtype << " with a CFL of " << fixed << setprecision(2) << CFL << "...\033[0m" << "\n\n"; 
 	string filename = "Viscous " + to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv";
 
 	auto start = TIME;
@@ -2155,7 +2155,7 @@ void Solver::write_2d_csv(const string& filename) {
 	}
 
 	file.close();
-	cout << "2D File saved successfully as \"" << filename << "\"" << endl;
+	cout << "\033[36m2D File saved successfully as \"" << filename << "\"\033[0m" << endl;
 }
 
 void Solver::write_1d_csv(const string& filename) {
@@ -2188,7 +2188,7 @@ void Solver::write_1d_csv(const string& filename) {
 	
 
 	file.close();
-	cout << "1D File saved successfully as \"" << filename << "\"" << endl; 
+	cout << "\033[36m1D File saved successfully as \"" << filename << "\"\033[0m" << endl;
 
 }
 

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume\DPLR Finite Volume.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{AF824A64-B1C6-352E-8FBD-CE9458863DA0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

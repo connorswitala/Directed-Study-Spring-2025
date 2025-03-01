@@ -57,7 +57,7 @@ public:
     inline double iArea(int i, int j) const override;
     inline double jArea(int i, int j) const override;
     inline Point iNorms(int i, int j) const override;
-    inline Point jNorms(int i, int j) const override;
+    inline Point jNorms(int i, int j) const override; 
 
 }; 
 
