@@ -4,6 +4,15 @@
     <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume\DPLR Finite Volume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library\2D FVS Library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library\Linear Algebra Library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator\GridGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume\CMakeLists.txt" />

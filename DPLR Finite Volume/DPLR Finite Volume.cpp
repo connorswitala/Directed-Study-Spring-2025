@@ -56,7 +56,7 @@ int main() {
 
 		if (grid_type == "double") {
 			cout << "\033[31mRamp inlet length: \033[0m"; cin >> l1;  cout << "\033[31mFirst ramp length: \033[0m"; cin >> l2; cout << "\033[31mSecond ramp length: \033[0m"; cin >> l3; cout << "\033[31mRamp outlet length: \033[0m"; cin >> l4;
-			cout << "\033[31mRamp inlet height: "; cin >> l5; cout << "\033[31mFirst ramp angle (in degrees): "; cin >> theta1; cout << "\033[31mSecond ramp angle (in degrees): \033[0m"; cin >> theta2;
+			cout << "\033[31mRamp inlet height: \033[0m"; cin >> l5; cout << "\033[31mFirst ramp angle (in degrees): \033[0m"; cin >> theta1; cout << "\033[31mSecond ramp angle (in degrees): \033[0m"; cin >> theta2;
 			gridg = make_unique<DoubleConeGrid>(Nx, Ny, l1, l2, l3, l4, theta1, theta2, l5); 
 		}
 

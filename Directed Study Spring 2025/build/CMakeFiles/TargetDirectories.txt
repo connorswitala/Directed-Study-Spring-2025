@@ -4,7 +4,7 @@ C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 20
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/Linear Algebra Library/CMakeFiles/ALL_BUILD.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/GridGenerator/CMakeFiles/GridGenerator.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/GridGenerator/CMakeFiles/ALL_BUILD.dir
-C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/2D FVS Library/CMakeFiles/FVSLibrary.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/2D FVS Library/CMakeFiles/2DFVSLibrary.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/2D FVS Library/CMakeFiles/ALL_BUILD.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/DPLR Finite Volume/CMakeFiles/DPLRFiniteVolume.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/DPLR Finite Volume/CMakeFiles/ALL_BUILD.dir

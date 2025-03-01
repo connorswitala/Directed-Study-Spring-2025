@@ -174,9 +174,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\2D FVS Library\FVSLibrary.vcxproj">
-      <Project>{57BB435F-CB20-3BBD-92DA-73D6806EE417}</Project>
-      <Name>FVSLibrary</Name>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\2D FVS Library\2DFVSLibrary.vcxproj">
+      <Project>{CECBC552-C6DB-39A8-836F-FA50AE2F8602}</Project>
+      <Name>2DFVSLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -86,18 +86,20 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
-      <MinimalRebuild></MinimalRebuild>
+      <MinimalRebuild>
+      </MinimalRebuild>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
+      <SupportJustMyCode>
+      </SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
@@ -106,10 +108,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -117,7 +119,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\Linear Algebra Library\Debug\LinearAlgebraLibrary.lib;..\GridGenerator\Debug\GridGenerator.lib;..\2D FVS Library\Debug\FVSLibrary.lib;..\GridGenerator\Debug\GridGenerator.lib;..\Linear Algebra Library\Debug\LinearAlgebraLibrary.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -125,6 +127,8 @@
       <ImportLibrary>C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/DPLR Finite Volume/Debug/DPLRFiniteVolume.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/DPLR Finite Volume/Debug/DPLRFiniteVolume.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>10000000</StackReserveSize>
+      <StackCommitSize>4000000</StackCommitSize>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -132,17 +136,19 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <MinimalRebuild></MinimalRebuild>
+      <MinimalRebuild>
+      </MinimalRebuild>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
+      <SupportJustMyCode>
+      </SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
@@ -153,10 +159,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -164,7 +170,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\Linear Algebra Library\Release\LinearAlgebraLibrary.lib;..\GridGenerator\Release\GridGenerator.lib;..\2D FVS Library\Release\FVSLibrary.lib;..\GridGenerator\Release\GridGenerator.lib;..\Linear Algebra Library\Release\LinearAlgebraLibrary.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -179,17 +185,19 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <MinimalRebuild></MinimalRebuild>
+      <MinimalRebuild>
+      </MinimalRebuild>
       <Optimization>MinSpace</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
+      <SupportJustMyCode>
+      </SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
@@ -200,10 +208,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -211,7 +219,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\Linear Algebra Library\MinSizeRel\LinearAlgebraLibrary.lib;..\GridGenerator\MinSizeRel\GridGenerator.lib;..\2D FVS Library\MinSizeRel\FVSLibrary.lib;..\GridGenerator\MinSizeRel\GridGenerator.lib;..\Linear Algebra Library\MinSizeRel\LinearAlgebraLibrary.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -226,18 +234,20 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <MinimalRebuild></MinimalRebuild>
+      <MinimalRebuild>
+      </MinimalRebuild>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
+      <SupportJustMyCode>
+      </SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
@@ -246,10 +256,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -257,7 +267,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\Linear Algebra Library\RelWithDebInfo\LinearAlgebraLibrary.lib;..\GridGenerator\RelWithDebInfo\GridGenerator.lib;..\2D FVS Library\RelWithDebInfo\FVSLibrary.lib;..\GridGenerator\RelWithDebInfo\GridGenerator.lib;..\Linear Algebra Library\RelWithDebInfo\LinearAlgebraLibrary.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -329,6 +339,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\DPLR Finite Volume\DPLR Finite Volume.cpp" />
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\2D FVS Library\2D FVS Library.cpp" />
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library\Linear Algebra Library.cpp" />
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator\GridGenerator.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -337,18 +350,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\2D FVS Library\FVSLibrary.vcxproj">
-      <Project>{57BB435F-CB20-3BBD-92DA-73D6806EE417}</Project>
-      <Name>FVSLibrary</Name>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\GridGenerator\GridGenerator.vcxproj">
-      <Project>{11330F67-54DB-3247-82A4-0CD0AC67641E}</Project>
-      <Name>GridGenerator</Name>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Directed Study Spring 2025\build\Linear Algebra Library\LinearAlgebraLibrary.vcxproj">
-      <Project>{B4D3EFC3-4329-30BD-8C60-864BCC9B419E}</Project>
-      <Name>LinearAlgebraLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

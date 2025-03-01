@@ -20,6 +20,9 @@
 //Value Computed by CMake
 2DFVSLibrary_IS_TOP_LEVEL:STATIC=OFF
 
+//Dependencies for the target
+2DFVSLibrary_LIB_DEPENDS:STATIC=general;GridGenerator;general;LinearAlgebraLibrary;
+
 //Value Computed by CMake
 2DFVSLibrary_SOURCE_DIR:STATIC=C:/Users/Connor/source/repos/Directed Study Spring 2025/2D FVS Library
 
@@ -226,6 +229,15 @@ GridGenerator_LIB_DEPENDS:STATIC=general;LinearAlgebraLibrary;
 
 //Value Computed by CMake
 GridGenerator_SOURCE_DIR:STATIC=C:/Users/Connor/source/repos/Directed Study Spring 2025/GridGenerator
+
+//Value Computed by CMake
+Hypersonics_BINARY_DIR:STATIC=C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build
+
+//Value Computed by CMake
+Hypersonics_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+Hypersonics_SOURCE_DIR:STATIC=C:/Users/Connor/source/repos/Directed Study Spring 2025
 
 //Value Computed by CMake
 LinearAlgebraLibrary_BINARY_DIR:STATIC=C:/Users/Connor/source/repos/Directed Study Spring 2025/Directed Study Spring 2025/build/Linear Algebra Library

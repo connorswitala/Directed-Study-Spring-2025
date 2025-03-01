@@ -13,6 +13,7 @@
 
 using namespace std;
 
+// Global constants for fluid dynamics
 constexpr double gamma = 1.4;
 constexpr double R = 287.0;
 constexpr double cv = R / (gamma - 1);
@@ -20,10 +21,11 @@ constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
 
-// HERE //
-constexpr int Nx = 100;
-constexpr int Ny = 50;
+// Set number of cells here
+constexpr int Nx = 500;
+constexpr int Ny = 500;
 
+// For CFD creation. 
 using CellTensor = array < array < Vector, Ny>, Nx>;
 using CellTesseract = array < array < Matrix, Ny>, Nx>;
 
@@ -33,8 +35,18 @@ using iFaceTesseract = array < array <Matrix, Ny>, Nx + 1>;
 using jFaceTensor = array < array < Vector, Ny + 1>, Nx>;
 using jFaceTesseract = array < array <Matrix, Ny + 1>, Nx>;
 
-typedef pair<Vector, Matrix> Duo;
 
+// Inline function that computes pressure from state vector
+inline double computePressure(const Vector& U) {
+	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
+}
+
+// Inline function that compuites Temperature from state vector
+inline double computeTemperature(const Vector& U) {
+	return ((gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]))) / (U[0] * R);
+}
+
+// This enum class is for setting boundary conditions types
 enum class BoundaryCondition {
 	IsothermalWall,
 	AdiabaticWall, 
@@ -44,6 +56,7 @@ enum class BoundaryCondition {
 	Undefined
 };
 
+// This struct contains the boundary conditions types for each side of the grid (left, right, bottom, top) 
 struct BoundaryConditions {
 
 	BoundaryCondition left;
@@ -55,6 +68,7 @@ struct BoundaryConditions {
 
 };
 
+// This set boundary conditions based on text from the UI
 inline BoundaryCondition getBoundaryCondition(const string& input) {
 	if (input == "inlet") return BoundaryCondition::Inlet;
 	if (input == "outlet") return BoundaryCondition::Outlet;
@@ -64,26 +78,22 @@ inline BoundaryCondition getBoundaryCondition(const string& input) {
 	return BoundaryCondition::Undefined;  
 }
 
+// This sets the inlet flow conditions from inputs in the UI
 struct inlet_conditions {
 	double rho, u, v, p, T, M, a;
 };
 
-inline double computePressure(const Vector& U) {
-	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2])); 
-}
-
-inline double computeTemperature(const Vector& U) {
-	return ((gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]))) / (U[0] * R); 
-}
-
+// This struct contains the states for inviscid Jacobian computation
 struct Inviscid_State {
 	double rho, u, v, p, a, k, uprime, pp, h0;
 };
 
+// This struct contains the states for viscous Jacobians computation
 struct Viscous_State { 
 	double rho, u, v, p, a, k, uprime, pp, h0, T; 
 };
 
+// This function computes the states for the inviscid Jacobians
 inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
 	Inviscid_State S;
 	S.rho = U[0];
@@ -98,6 +108,7 @@ inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double 
 	return S; 
 }
 
+// This function computes the states for the viscous Jacobians
 inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
 	Viscous_State S;
 

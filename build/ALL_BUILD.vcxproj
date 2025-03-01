@@ -174,13 +174,13 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
+    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\2D FVS Library\2DFVSLibrary.vcxproj">
+      <Project>{8B440142-B9B5-3FC5-8469-1D2EC882B9EA}</Project>
+      <Name>2DFVSLibrary</Name>
+    </ProjectReference>
     <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\DPLR Finite Volume\DPLRFiniteVolume.vcxproj">
       <Project>{E46DDAE8-FFDD-3A02-A3D7-59162B3D8E3A}</Project>
       <Name>DPLRFiniteVolume</Name>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\2D FVS Library\FVSLibrary.vcxproj">
-      <Project>{718FBFA0-1C03-3A7D-99E7-C9FCC8382BA7}</Project>
-      <Name>FVSLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\GridGenerator\GridGenerator.vcxproj">
       <Project>{2EE68B6E-D2FC-3185-91B8-B764355C12BD}</Project>
