@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library\Linear Algebra Library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{AB2266F0-DA85-3683-AC12-ED6163B1F329}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
