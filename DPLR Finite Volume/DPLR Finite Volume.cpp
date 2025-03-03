@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 #include <cassert>
-#include <cstdlib>[]
+#include <cstdlib>
 #include <fstream> 
 #include "GridGenerator.h" 
 #include "2DFVSLibrary.h" 
@@ -19,6 +19,8 @@ int main() {
 	// 2D FVS Library.h file. It should be right at the top. 
 
 	auto start = TIME;
+
+	int Nx_holder, Ny_holder; 
 
 	double l1, l2, l3, l4, l5, R1, R2, R3, theta1, theta2, d_min;  
 	int progress_update; 
@@ -49,10 +51,14 @@ int main() {
 		cout << "\033[36mGrid type (enter 'ramp' for ramp, 'cylinder' for cylinder, 'plate' for flat plate, 'double' for double ramp, \n 'mirrored' for double ramp that is mirrored above x-axis): \033[0m";	cin >> grid_type; cout << endl; 
 
 		while (grid_type != "ramp" && grid_type != "cylinder" && grid_type != "plate" && grid_type != "double" && grid_type != "mirrored") {
-			cout << "\033[36mUnknown grid type. Please choose either 'ramp' 'cylinder' 'plate' or 'double': \033[0m"; cin >> preset; cout << endl;
+			cout << "\033[36mUnknown grid type. Please choose either 'ramp' 'cylinder' 'plate' or 'double': \033[0m"; cin >> grid_type; cout << endl; 
 		}
 
-		cout << "\033[36mCFL (try to keep at or below 5.0): \033[0m";	cin >> CFL; cout << endl; 
+		cout << "\033[36mNumber of cells in x-direction: \033[0m"; cin >> Nx_holder; cout << "\033[36mNumber of cells in y-direction: \033[0m"; cin >> Ny_holder;
+
+		const int Nx = Nx_holder, Ny = Ny_holder;    
+
+		cout << "\033[36mCFL (try to keep at or below 5.0): \033[0m";	cin >> CFL; cout << endl;  
 
 		if (grid_type == "ramp") {
 			cout << "\033[31mInlet section length: \033[0m"; cin >> l1;  cout << "\033[31mRamp section length: \033[0m"; cin >> l2; cout << "\033[31mOutlet section length: \033[0m"; cin >> l3; 
@@ -103,7 +109,7 @@ int main() {
 		BoundaryConditions BCs(getBoundaryCondition(leftBC), getBoundaryCondition(rightBC), getBoundaryCondition(bottomBC), getBoundaryCondition(topBC)); 
 
 		// Sets up the solver class with inlet and boundary conditions, grid type, CFL, wall temperature, and the iteration number for progress     
-		Solver solver(INLET, *gridg, BCs, CFL, Wall_Temp, progress_update);  
+		Solver solver(Nx, Ny, INLET, *gridg, BCs, CFL, Wall_Temp, progress_update);   
 		 
 		// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
 		if (solver_type == "inviscid") solver.solve_inviscid();
@@ -120,11 +126,12 @@ int main() {
 		INLET.v = 0,							// Inlet v-velocity
 		INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
 
-		int progress_update = 100;  // This number prints a status update after the number of iterations declared here. 
-		CFL = 4.0; 
+		int progress_update = 50;  // This number prints a status update after the number of iterations declared here. 
+		CFL = 3.0; 
+		const int Nx = 50, Ny = 25; 
 
-		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);     
-		//RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);  
+		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);     
+		RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);   
 
 		//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);       
 		//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.00001, pi / 2, 3 * pi / 2); 
@@ -135,12 +142,12 @@ int main() {
 		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);  
 		//DoubleConeGrid grid(Nx, Ny, 1, 1, 1, 1, 25, 50, 2.5);  
 
-		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);   
-		MirroredGrid grid(Nx, Ny, 1, 1, 1, 2, 15, 30, 2.5);   
+		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);   
+		//MirroredGrid grid(Nx, Ny, 1, 1, 1, 2, 15, 30, 2.5);   
 		
 
 		// Sets up the solver class with inlet and boundary conditions, grid type, CFL, wall temperature, and the iteration number for progress     
-		Solver solver(INLET, grid, BCs, CFL, Wall_Temp, progress_update); 
+		Solver solver(Nx, Ny, INLET, grid, BCs, CFL, Wall_Temp, progress_update); 
 
 		// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
 		solver.solve_inviscid(); 

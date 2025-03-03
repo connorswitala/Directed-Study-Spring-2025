@@ -6,9 +6,6 @@
 #include <cstdlib>
 #include <fstream> 
 #include "LinearAlgebra.h"
-#include "2DFVSLibrary.h"
-#include "GridGenerator.h"
-#include <omp.h> 
 
 
 
@@ -16,23 +13,16 @@ using namespace std;
 
 int main() {
 
-	MirroredGrid grid(Nx, Ny, 1, 1, 1, 1, 15, 15, 1);
-
-	//cout << grid.jNorms(75, 25).x << endl;  
-
-	string A = "plot_2D_grid.csv"; 
-	ofstream file(A);  
+    Vector A = random(4), B = random(4);
+    Matrix C = random(4, 4), D = random(4, 4); 
 
 
-	file << "x_points, y_points, z_points" << endl; 
+    Vector E = A/C;
+    Matrix F = C/D;
 
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
-			file << grid.Vertex(i, j).x << ", " << grid.Vertex(i, j).y << ", 0" << endl;
-		}
-	}
 
-	file.close();
+    displayVector(E);
+    displayMatrix(F); 
 
     return 0;
 }

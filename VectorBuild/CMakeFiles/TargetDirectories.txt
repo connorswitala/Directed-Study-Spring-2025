@@ -1,0 +1,10 @@
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/CMakeFiles/ALL_BUILD.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/Linear Algebra Library/CMakeFiles/LinearAlgebraLibrary.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/Linear Algebra Library/CMakeFiles/ALL_BUILD.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/GridGenerator/CMakeFiles/GridGenerator.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/GridGenerator/CMakeFiles/ALL_BUILD.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/2D FVS Library/CMakeFiles/2DFVSLibrary.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/2D FVS Library/CMakeFiles/ALL_BUILD.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/DPLR Finite Volume/CMakeFiles/DPLRFiniteVolume.dir
+C:/Users/Connor/source/repos/Directed Study Spring 2025/VectorBuild/DPLR Finite Volume/CMakeFiles/ALL_BUILD.dir
