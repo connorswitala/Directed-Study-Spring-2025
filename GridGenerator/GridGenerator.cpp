@@ -585,3 +585,174 @@ Point DoubleConeGrid::DoubleConeGrid::iNorms(int i, int j) const {
 Point DoubleConeGrid::DoubleConeGrid::jNorms(int i, int j) const {
 	return jNormals[i][j];
 }
+
+
+///////////////////////////////////////////////////
+/////////////// Mirrored Grid functions ////////
+///////////////////////////////////////////////////
+
+MirroredGrid::MirroredGrid(int Nx, int Ny, double l1, double l2, double l3, double l4, double theta1, double theta2, double inlet_height) : Nx(Nx), Ny(Ny),  
+l1(l1), l2(l2), l3(l3), l4(l4), theta1(theta1), theta2(theta2), inlet_height(inlet_height), vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)),
+cellVolumes(Nx, vector<double>(Ny)), iAreas(Nx + 1, vector<double>(Ny, 0.0)), jAreas(Nx, vector<double>(Ny + 1, 0.0)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
+
+	int i, j;
+
+	// Important constants
+	double deg_to_rads = 3.141592653 / 180.0;
+
+	// Define lengths 
+	double L_total = l1 + l2 + l3 + l4;
+	double dx = L_total / (Nx + 1);
+	double dy = inlet_height / (Ny + 1);
+	double L, dy_ramp;
+
+	// Create x vertices
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+			vertices[i][j].x = i * dx;
+		}
+	}
+
+	// Snap x-vertices to important boundary points.
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+			if (vertices[i][j].x > l1 && vertices[i][j].x < l1 + dx) {
+				vertices[i][j].x = l1;
+			}
+			else if (vertices[i][j].x > l1 + l2 && vertices[i][j].x < l1 + l2 + dx) {
+				vertices[i][j].x = l1 + l2;
+			}
+			else if (i == Nx) {
+				vertices[i][j].x = L_total;
+			}
+		}
+	}
+
+	// Create grid.
+	for (i = 0; i <= Nx; ++i) {
+
+		L = vertices[i][0].x;
+
+		// y vertices for section 1
+		if (L <= l1) {
+			dy = 2 * inlet_height / (Ny + 1); 
+			for (j = 0; j <= Ny; ++j) {
+				vertices[i][j].y = j * dy;
+			}
+		}
+
+		// y vertices for section 2
+		else if ((L > l1) && (L <= (l1 + l2))) {
+
+			// Changes dy based on section
+			if (L >= l1 && L < l1 + l2 + dx)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta1 * deg_to_rads);
+
+			if (L == l1 + l2) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta1 * deg_to_rads);
+
+			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
+			dy = (2 * (inlet_height - vertices[i][0].y)) / (Ny + 1);
+
+			for (j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = vertices[i][0].y + j * dy;
+			}
+		}
+
+		// y vertices for section 3
+		else if ((L > l1 + l2) && (L <= L_total - l4)) {
+
+			// Changes dy based on section
+			if (L >= l2 && L < L_total)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);
+
+			if (L == L_total) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(theta2 * deg_to_rads);
+
+			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
+			dy = (2 * (inlet_height - vertices[i][0].y)) / (Ny + 1);
+
+			for (j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = vertices[i][0].y + j * dy;
+			}
+		}
+
+		else {
+			dy = (2 * (inlet_height - (l1 * tan(theta1 * deg_to_rads) + l2 * tan(theta2 * deg_to_rads)))) / (Ny + 1);
+			for (j = 0; j <= Ny; ++j) {
+				vertices[i][j].y = l1 * tan(theta1 * deg_to_rads) + l2 * tan(theta2 * deg_to_rads) + j * dy;
+			}
+		}
+
+	}
+
+	// Edge vectors
+	Point AB, BC, CD, DA;
+
+	// Calculates cell centers and volumes
+	for (i = 0; i < Nx; ++i) {
+		for (j = 0; j < Ny; ++j) {
+			DA = { vertices[i][j].x - vertices[i][j + 1].x, vertices[i][j].y - vertices[i][j + 1].y };
+			AB = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+			BC = { vertices[i + 1][j + 1].x - vertices[i + 1][j].x, vertices[i + 1][j + 1].y - vertices[i + 1][j].y };
+			CD = { vertices[i][j + 1].x - vertices[i + 1][j + 1].x, vertices[i][j + 1].y - vertices[i + 1][j + 1].y };
+
+			cellCenters[i][j] = { (vertices[i][j].x + vertices[i + 1][j].x + vertices[i + 1][j + 1].x + vertices[i][j + 1].x) / 4,
+									(vertices[i][j].y + vertices[i + 1][j].y + vertices[i + 1][j + 1].y + vertices[i][j + 1].y) / 4 };
+
+			cellVolumes[i][j] = 0.5 * fabs(DA.x * AB.y - DA.y * AB.x) + 0.5 * fabs(BC.x * CD.y - BC.y * CD.x);
+		}
+	}
+
+	// Calculates geometries for i-faces
+	for (i = 0; i <= Nx; ++i) {
+		for (j = 0; j < Ny; ++j) {
+
+			AB = { vertices[i][j + 1].x - vertices[i][j].x, vertices[i][j + 1].y - vertices[i][j].y };
+
+			iAreas[i][j] = sqrt(AB.x * AB.x + AB.y * AB.y);
+
+			iNormals[i][j].x = AB.y / fabs(iAreas[i][j]);
+			iNormals[i][j].y = AB.x / fabs(iAreas[i][j]);
+		}
+	}
+
+	// Calculates geometries for j-faces
+	for (i = 0; i < Nx; ++i) {
+		for (j = 0; j <= Ny; ++j) {
+
+			CD = { vertices[i + 1][j].x - vertices[i][j].x, vertices[i + 1][j].y - vertices[i][j].y };
+
+			jAreas[i][j] = sqrt(CD.x * CD.x + CD.y * CD.y);
+
+			jNormals[i][j].x = -CD.y / fabs(jAreas[i][j]);
+			jNormals[i][j].y = CD.x / fabs(jAreas[i][j]);
+		}
+	}
+
+}
+
+Point MirroredGrid::MirroredGrid::Center(int i, int j) const {
+	return cellCenters[i][j];
+}
+
+Point MirroredGrid::MirroredGrid::Vertex(int i, int j) const {
+	return vertices[i][j];
+}
+
+double MirroredGrid::MirroredGrid::Volume(int i, int j) const {
+	return cellVolumes[i][j];
+}
+
+double MirroredGrid::MirroredGrid::iArea(int i, int j) const {
+	return iAreas[i][j];
+}
+
+double MirroredGrid::MirroredGrid::jArea(int i, int j) const {
+	return jAreas[i][j];
+}
+
+
+Point MirroredGrid::MirroredGrid::iNorms(int i, int j) const {
+	return iNormals[i][j];
+}
+Point MirroredGrid::MirroredGrid::jNorms(int i, int j) const {  
+	return jNormals[i][j];
+}
+

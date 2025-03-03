@@ -133,3 +133,28 @@ public:
     Point iNorms(int i, int j) const override; 
     Point jNorms(int i, int j) const override;
 };
+
+
+class MirroredGrid : public Grid { 
+private:
+    int Nx, Ny;
+    double theta1, theta2, l1, l2, l3, l4, inlet_height;
+
+    vector<vector<Point>> vertices;
+    vector<vector<Point>> cellCenters;
+    vector<vector<Point>> iNormals;
+    vector<vector<Point>> jNormals;
+    vector<vector<double>> iAreas, jAreas, cellVolumes;
+
+public:
+
+    MirroredGrid(int Nx, int Ny, double l1, double l2, double l3, double l4, double theta1, double theta2, double inlet_height);
+
+    double Volume(int i, int j) const override;
+    Point Center(int i, int j) const override;
+    Point Vertex(int i, int j) const override;
+    double iArea(int i, int j) const override;
+    double jArea(int i, int j) const override;
+    Point iNorms(int i, int j) const override;
+    Point jNorms(int i, int j) const override;
+};

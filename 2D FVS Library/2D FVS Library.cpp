@@ -21,6 +21,7 @@ progress_update(progress_update){
 	else if (dynamic_cast<CylinderGrid*>(&grid)) gridtype = "Cylinder";  
 	else if (dynamic_cast<FlatPlateGrid*>(&grid)) gridtype = "Flat Plate"; 
 	else if (dynamic_cast<DoubleConeGrid*>(&grid)) gridtype = "Double Cone"; 
+	else if (dynamic_cast<MirroredGrid*>(&grid)) gridtype = "Mirrored Double Ramp";
 	else gridtype = "Unknown";  
 
 
@@ -342,7 +343,7 @@ void Solver::solve_inviscid () {
 
 	auto end = TIME;
 	DURATION duration = end - start; 
-	cout << "Program completed in " << duration.count() << endl; 
+	cout << "Program completed in " << duration.count() << " seconds." << endl;
 
 
 }  
@@ -384,7 +385,7 @@ void Solver::solve_viscous() {
 
 	auto end = TIME;
 	DURATION duration = end - start;
-	cout << "Program complete in " << duration.count() << endl;
+	cout << "Program complete in " << duration.count() << " seconds." << endl;
 
 
 
@@ -2124,38 +2125,33 @@ void Solver::compute_outer_residual() {
 
 void Solver::write_2d_csv(const string& filename) {
 
-	double a;
+	double a, density, pressure, u_velocity, v_velocity, Mach, Temperature;
 
-	array<array<double, Ny>, Nx> density, u_velocity, v_velocity, pressure, Mach, Temperature;
 	Vector Primitives;
+
+	ofstream file(filename);
+	file << "density, u velocity, v velocity, pressure, Mach, Temperature, x_points, y_points, z_points" << endl;
+
 
 	for (int i = 0; i < Nx; ++i) {
 		for (int j = 0; j < Ny; ++j) {
 
 			Primitives = constoPrim(U[i][j]);
-			density[i][j] = Primitives[0];
-			pressure[i][j] = Primitives[3];
-			a = sqrt(gamma * pressure[i][j] / density[i][j]);
-			u_velocity[i][j] = Primitives[1];
-			v_velocity[i][j] = Primitives[2];
-			Mach[i][j] = sqrt(u_velocity[i][j] * u_velocity[i][j] + v_velocity[i][j] * v_velocity[i][j]) / a;
-			Temperature[i][j] = pressure[i][j] / (density[i][j] * R);
-		}
-	}
+			density = Primitives[0];
+			pressure = Primitives[3];
+			a = sqrt(gamma * pressure / density);
+			u_velocity = Primitives[1];
+			v_velocity = Primitives[2];
+			Mach = sqrt(u_velocity * u_velocity + v_velocity * v_velocity) / a;
+			Temperature = pressure / (density * R);
 
-	ofstream file(filename);
+			file << density << ", " << u_velocity << ", " << v_velocity << ", " << pressure << ", " << Mach << ", " << Temperature<< ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
 
-
-	file << "density, u velocity, v velocity, pressure, Mach, Temperature, x_points, y_points, z_points" << endl;
-
-	for (int i = 0; i < Nx; ++i) {
-		for (int j = 0; j < Ny; ++j) {
-			file << density[i][j] << ", " << u_velocity[i][j] << ", " << v_velocity[i][j] << ", " << pressure[i][j] << ", " << Mach[i][j] << ", " << Temperature[i][j] << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
 		}
 	}
 
 	file.close();
-	cout << "\033[36m2D File saved successfully as \"" << filename << "\"\033[0m" << endl;
+	cout << "\033[36m2D File saved successfully as \"" << filename << "\"\033[0m" << endl;  
 }
 
 void Solver::write_1d_csv(const string& filename) {
