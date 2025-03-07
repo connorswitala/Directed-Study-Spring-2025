@@ -11,6 +11,14 @@
 
 using namespace std; 
 
+
+
+
+
+
+
+
+
 int main() {
 
     Vector A = random(4), B = random(4);

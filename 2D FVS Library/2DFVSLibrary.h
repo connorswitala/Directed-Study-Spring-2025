@@ -15,7 +15,8 @@ using namespace std;
 
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
-constexpr double R = 287.0;
+constexpr double R = 287;
+constexpr double Ru = 8.314;
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
@@ -176,6 +177,8 @@ public:
 		DURATION duration = end - start;
 		cout << "Time taken: " << duration.count() << endl;
 	}
+
+	Vector minmod(Vector& Ui, Vector& Uii);
 
 
 };

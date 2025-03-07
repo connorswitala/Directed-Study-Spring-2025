@@ -2131,6 +2131,22 @@ void Solver::compute_outer_residual() {
 	outer_residual = sqrt(outer_residual);
 }
 
+Vector Solver::minmod(Vector& Ui, Vector& Uii) {
+	
+	Vector result(4);  
+
+	for (int i = 0; i < 4; ++i) {
+		if (Ui[i] * Uii[i] <= 0) {
+			result[i] = 0;
+		}
+		else result[i] = min(Ui[i], Uii[i]);
+	}
+
+	return result; 
+
+}
+
+
 void Solver::write_2d_csv(const string& filename) {
 
 	double a, density, pressure, u_velocity, v_velocity, Mach, Temperature;
