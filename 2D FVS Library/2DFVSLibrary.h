@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LinearAlgebra.h"
-#include "GridGenerator.h"
+#include "GridGenerator.h" 
 #include <cstdlib>
 #include <fstream> 
 #include <omp.h>
@@ -16,7 +16,7 @@ using namespace std;
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
 constexpr double R = 287;
-constexpr double Ru = 8.314;
+constexpr double Ru = 8314; 
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
@@ -28,8 +28,9 @@ inline double computePressure(const Vector& U) {
 
 // Inline function that compuites Temperature from state vector
 inline double computeTemperature(const Vector& U) {
-	return ((gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]))) / (U[0] * R);
+	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
 }
+
 
 // This enum class is for setting boundary conditions types
 enum class BoundaryCondition {
@@ -110,6 +111,10 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 	return S;
 }
 
+
+Vector primtoCons(const Vector& V);
+Vector constoPrim(const Vector& U);
+
 class Solver { 
 
 private:
@@ -135,8 +140,6 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector primtoCons(const Vector& V);  
-	Vector constoPrim(const Vector& U);
 	Vector constoViscPrim(const Vector& U); 
 
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);

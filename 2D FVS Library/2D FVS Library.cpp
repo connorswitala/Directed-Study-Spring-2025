@@ -6,6 +6,29 @@
 #include "2DFVSLibrary.h"
 
 
+Vector primtoCons(const Vector& V) {
+
+	Vector U(4);
+	U[0] = V[0];
+	U[1] = V[0] * V[1];
+	U[2] = V[0] * V[2];
+	U[3] = V[3] / (gamma - 1) + 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2]);
+
+	return U;
+}
+
+Vector constoPrim(const Vector& U) {
+
+	static Vector V(4);
+	V[0] = U[0];
+	V[1] = U[1] / U[0];
+	V[2] = U[2] / U[0];
+	V[3] = (U[3] - 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2])) * (gamma - 1);
+
+	return V;
+}
+
+
 Solver::Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update) : Nx(Nx), Ny(Ny), 
 Tw(Tw), INLET(INLET), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
 i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), 
@@ -52,28 +75,6 @@ CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progre
 	}
 
 };   
-
-Vector Solver::primtoCons(const Vector& V) { 
-
-	Vector U(4); 
-	U[0] = V[0];
-	U[1] = V[0] * V[1];
-	U[2] = V[0] * V[2];
-	U[3] = V[3] / (gamma - 1) + 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2]);
-
-	return U;
-}
-
-Vector Solver::constoPrim(const Vector& U) { 
-
-	static Vector V(4);
-	V[0] = U[0];
-	V[1] = U[1] / U[0];
-	V[2] = U[2] / U[0];
-	V[3] = (U[3] - 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2])) * (gamma - 1);
-
-	return V;
-}
 
 Vector Solver::constoViscPrim(const Vector& U) { 
 	Vector result(4);
@@ -534,8 +535,6 @@ void Solver::compute_inviscid_jacobians() {
 		i_minus_inviscid_Jacobians[0][j] = Y;  
 		i_Fluxes[0][j] = X * Ui + Y * Uii;    
 	}
-
-
 
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on right boundary
