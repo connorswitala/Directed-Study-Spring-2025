@@ -24,6 +24,7 @@
     <ProjectGuid>{d16691ca-2cd6-4d63-966d-96560ac97aa2}</ProjectGuid>
     <RootNamespace>My2DFVSLibrary</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>2D FVS Library</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -112,7 +113,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\frodo\source\repos\connorswitala\Directed-Study-Spring-2025\GridGenerator;C:\Users\frodo\source\repos\connorswitala\Directed-Study-Spring-2025\Linear Algebra Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>

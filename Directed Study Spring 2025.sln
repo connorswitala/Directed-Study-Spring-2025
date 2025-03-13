@@ -19,14 +19,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2D Shock Shock (With Librar
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DPLR Finite Volume", "DPLR Finite Volume\DPLR Finite Volume.vcxproj", "{5FDD9EDC-4566-4B73-BF61-12045C9163D5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Linear Algebra Library 2", "Linear Algebra Library 2\Linear Algebra Library 2.vcxproj", "{02988F8E-7BFB-480F-B38B-A4F859B36343}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TESTING 2", "TESTING 2\TESTING 2.vcxproj", "{F7687309-BEE5-48A0-AE96-A14A38CD216D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{10CD9ABA-561E-45A9-8BE0-B00E786E26F9}"
-	ProjectSection(SolutionItems) = preProject
-		CMakeLists.txt = CMakeLists.txt
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chemical Equilibrium", "Chemical Equilibrium\Chemical Equilibrium.vcxproj", "{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}"
 EndProject
@@ -102,14 +97,6 @@ Global
 		{5FDD9EDC-4566-4B73-BF61-12045C9163D5}.Release|x64.Build.0 = Release|x64
 		{5FDD9EDC-4566-4B73-BF61-12045C9163D5}.Release|x86.ActiveCfg = Release|Win32
 		{5FDD9EDC-4566-4B73-BF61-12045C9163D5}.Release|x86.Build.0 = Release|Win32
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Debug|x64.ActiveCfg = Debug|x64
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Debug|x64.Build.0 = Debug|x64
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Debug|x86.ActiveCfg = Debug|Win32
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Debug|x86.Build.0 = Debug|Win32
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x64.ActiveCfg = Release|x64
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x64.Build.0 = Release|x64
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x86.ActiveCfg = Release|Win32
-		{02988F8E-7BFB-480F-B38B-A4F859B36343}.Release|x86.Build.0 = Release|Win32
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x64.ActiveCfg = Debug|x64
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x64.Build.0 = Debug|x64
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Debug|x86.ActiveCfg = Debug|Win32

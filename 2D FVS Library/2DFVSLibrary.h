@@ -79,6 +79,11 @@ struct Viscous_State {
 	double rho, u, v, p, a, k, uprime, pp, h0, T; 
 };
 
+// This strut contains the mass fractions of air. 
+struct element_moles {
+	double O2, N2, total;
+};
+
 // This function computes the states for the inviscid Jacobians
 inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
 	Inviscid_State S;
@@ -188,6 +193,46 @@ public:
 
 
 };
+
+
+
+class Chemistry {
+
+private:
+
+	double T, p, h_g, h, h_stag, R_mix, rho, u, v, h_chem;
+	Matrix T_coeff, Int_const, hi_t_coeff, hi_t_int_const, lo_t_coeff, lo_t_int_const, middle_t_coeff, middle_t_int_const;
+
+	Vector Yk, mu_k0, H_0, S_0, CP_0, MW, mk, nk, theta_v, theta_f, V, U, h_f, R_k;
+	element_moles EM;
+
+public:
+
+	Chemistry(inlet_conditions& INLET);		
+
+	void compute_h0();
+
+	void compute_s0();
+
+	void compute_mass_fractions();
+
+	void compute_mu0();
+
+	double norm(Vector& v1, Vector& v2);
+
+	// Solve for molar fractions using Gibbs free energy minimization
+	void compute_molar_fractions();
+
+	void display_mass_fraction();
+
+	// Solve for chemical equilibrium temperature using energy conservation
+	void compute_temperature();
+
+	Vector compute_equilibrium(Vector& U);   
+	 
+
+};
+
 
 
 
