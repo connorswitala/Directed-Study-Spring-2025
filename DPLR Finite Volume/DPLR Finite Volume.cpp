@@ -126,9 +126,9 @@ int main() {
 		INLET.v = 0,							// Inlet v-velocity
 		INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
 
-		int progress_update = 50;  // This number prints a status update after the number of iterations declared here. 
-		CFL = 3.0; 
-		const int Nx = 50, Ny = 25; 
+		int progress_update = 10;  // This number prints a status update after the number of iterations declared here. 
+		CFL = 1.0; 
+		const int Nx = 100, Ny = 50; 
 
 		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);     
 		RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);   

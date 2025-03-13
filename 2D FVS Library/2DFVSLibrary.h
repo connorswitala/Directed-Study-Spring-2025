@@ -148,6 +148,9 @@ public:
 	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
 	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
 
+
+	void fill_ghost_cells_inviscid(); 
+
 	void solve_inviscid();  
 	void solve_viscous();  
 	void solve_inviscid_timestep(); 
@@ -181,7 +184,7 @@ public:
 		cout << "Time taken: " << duration.count() << endl;
 	}
 
-	Vector minmod(Vector& Ui, Vector& Uii);
+	Vector minmod(const Vector& Ui, const Vector& Uii); 
 
 
 };
