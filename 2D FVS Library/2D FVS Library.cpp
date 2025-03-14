@@ -6,7 +6,8 @@
 #include "2DFVSLibrary.h"
 
 
-Vector primtoCons(const Vector& V) {
+
+Vector primtoCons(const Vector& V, const doubule& gamma) {
 
 	Vector U(4);
 	U[0] = V[0];
@@ -17,19 +18,20 @@ Vector primtoCons(const Vector& V) {
 	return U;
 }
 
-Vector constoPrim(const Vector& U) {
+Vector constoPrim(const Vector& U, const double& gamma) { 
 
 	static Vector V(4);
 	V[0] = U[0];
 	V[1] = U[1] / U[0];
 	V[2] = U[2] / U[0];
-	V[3] = (U[3] - 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2])) * (gamma - 1);
+	V[3] = (U[3] - 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2])) * (gamma - 1); 
 
 	return V;
 }
 
+
 Solver::Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update) : Nx(Nx), Ny(Ny), 
-Tw(Tw), INLET(INLET), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
+Tw(Tw), INLET(INLET), R(R), gamma(gamma), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
 i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), 
 j_minus_inviscid_Jacobians(j_minus_inviscid_Jacobians), i_viscous_Jacobians(i_viscous_Jacobians), j_viscous_Jacobians(j_viscous_Jacobians),  gridtype(gridtype), dt(dt), 
 CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progress_update(progress_update){
@@ -331,13 +333,12 @@ void Solver::solve_inviscid () {
 
 		compute_dt();
 
-		#pragma omp parallel for
-		for (int i = 0; i < Nx; ++i) {
-			for (int j = 0; j < Ny; ++j) {
-				U[i + 2][j + 2] = chem.compute_equilibrium(U[i + 2][j + 2]);  
-			}
-		}
-	 
+		//for (int i = 0; i < Nx; ++i) {
+		//	for (int j = 0; j < Ny; ++j) {
+		//		U[i + 2][j + 2] = chem.compute_equilibrium(U[i + 2][j + 2]);  
+		//	}
+		//}
+		// 	 
 		solve_inviscid_timestep();
 
 		compute_outer_residual();
@@ -2258,7 +2259,7 @@ void Solver::write_1d_csv(const string& filename) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-Chemistry::Chemistry(inlet_conditions& INLET) : rho(rho), u(u), v(v), T(T), h(h), h_g(h_g), h_chem(h_chem), h_stag(h_stag), p(p), EM(EM), CP_0(5), H_0(5), S_0(5), mu_k0(5), U(5), mk(5), nk(5), Yk(5), R_k(5),
+Chemistry::ChemistrySetup(inlet_conditions& INLET) : rho(rho), u(u), v(v), T(T), h(h), h_g(h_g), h_chem(h_chem), h_stag(h_stag), p(p), EM(EM), CP_0(5), H_0(5), S_0(5), mu_k0(5), U(5), mk(5), nk(5), Yk(5), R_k(5),  
 		MW(5), theta_v(3), V(4), h_f(5), theta_f(5), R_mix(R_mix), T_coeff(5, Vector(7)), Int_const(5, Vector(2)), hi_t_coeff(5, Vector(7)), hi_t_int_const(5, Vector(2)), lo_t_coeff(5, Vector(7)),
 		lo_t_int_const(5, Vector(2)), middle_t_coeff(5, Vector(7)), middle_t_int_const(5, Vector(2)) {
 

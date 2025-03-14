@@ -14,21 +14,18 @@
 using namespace std;
 
 // Global constants for fluid dynamics
-constexpr double gamma = 1.4;
 constexpr double R = 287;
 constexpr double Ru = 8314; 
-constexpr double cv = R / (gamma - 1);
-constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
 // Inline function that computes pressure from state vector
-inline double computePressure(const Vector& U) {
+inline double computePressure(const Vector& U, const double& gamma) {
 	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
 }
 
 // Inline function that compuites Temperature from state vector
-inline double computeTemperature(const Vector& U) {
-	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
+inline double computeTemperature(const Vector& U, const double& gamma) { 
+	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R; 
 }
 
 
@@ -85,7 +82,7 @@ struct element_moles {
 };
 
 // This function computes the states for the inviscid Jacobians
-inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
+inline Inviscid_State compute_inviscid_state(const Vector& U, const double& gamma, double nx, double ny) { 
 	Inviscid_State S;
 	S.rho = U[0];
 	S.u = U[1] / S.rho; 
@@ -100,7 +97,7 @@ inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double 
 }
 
 // This function computes the states for the viscous Jacobians
-inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
+inline Viscous_State compute_viscous_state(const Vector& U, const double& gamma, double nx, double ny) { 
 	Viscous_State S;
 
 	S.rho = U[0];
@@ -117,8 +114,6 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 }
 
 
-Vector primtoCons(const Vector& V);
-Vector constoPrim(const Vector& U);
 
 class Solver { 
 
@@ -127,7 +122,7 @@ private:
 	string gridtype; 
 
 	const int Nx, Ny, progress_update; 
-	double CFL, Tw, dt, inner_residual; 
+	double CFL, Tw, dt, inner_residual, R, gamma;  
 
 	Vector V_inlet, U_inlet;    
 
@@ -138,6 +133,9 @@ private:
 	BoundaryConditions BoundaryType;  
 	inlet_conditions INLET; 
 
+	element_moles EM;
+
+
 
 public: 
 
@@ -145,6 +143,8 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
+	Vector primtoCons(const Vector& V); 
+	Vector constoPrim(const Vector& U); 
 	Vector constoViscPrim(const Vector& U); 
 
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
@@ -190,6 +190,31 @@ public:
 	}
 
 	Vector minmod(const Vector& Ui, const Vector& Uii); 
+
+	//////////
+
+
+	void ChemistrySetup(inlet_conditions& INLET);
+
+	void compute_h0();
+
+	void compute_s0();
+
+	void compute_mass_fractions();
+
+	void compute_mu0();
+
+	double norm(Vector& v1, Vector& v2);
+
+	// Solve for molar fractions using Gibbs free energy minimization
+	void compute_molar_fractions();
+
+	void display_mass_fraction();
+
+	// Solve for chemical equilibrium temperature using energy conservation
+	void compute_temperature();
+
+	Vector compute_equilibrium(Vector& U);
 
 
 };

@@ -118,13 +118,13 @@ int main() {
 
 	else if (preset == "preset") {
 
-		INLET.p = 10000.0,						// Inlet Pressure (SET)
-		INLET.T = 300.0,						// Inlet Temperature (SET)
+		INLET.p = 251,						// Inlet Pressure (SET)
+		INLET.T = 277,						// Inlet Temperature (SET)
 		INLET.M = 2.5,							// Inlet Mach speed (SET)
 		INLET.a = sqrt(gamma * R * INLET.T),	// Inlet Sound Speed
 		INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
 		INLET.v = 0,							// Inlet v-velocity
-		INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
+		INLET.rho = 0.00385101;	// Inlet density
 
 		int progress_update = 1;  // This number prints a status update after the number of iterations declared here. 
 		CFL = 1.0; 
