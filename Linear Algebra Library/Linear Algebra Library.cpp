@@ -12,35 +12,21 @@ void printMemoryUsage() {
 }
 
 
-Vector zerosV() {
-    return Vector{};
-}
 
-Matrix zerosM() {
-    return Matrix{};
-}
-
-Vector onesV() {
-    return Vector{1, 1, 1, 1};
-}
-
-Matrix onesM() {
-    return Matrix{ {{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}} };
-}
 
 
 // Creates an identity matrix of given size
-Matrix identity() {
-    Matrix I = {}; 
+Matrix identity(int a) { 
+    Matrix I(a, Vector(a, 0.0)); 
     for (int i = 0; i < 4; ++i) { 
         I[i][i] = 1.0;
     }
     return I;
-}
+} 
 
 // This function creates a vector full of random variables.
-Vector randomV() { 
-    Vector result = {};
+Vector random(int a) {
+    Vector result(a); 
 
     for (int j = 0; j < 4; ++j) {
         result[j] = rand(); 
@@ -49,9 +35,9 @@ Vector randomV() {
 }
 
 // This function creates a matrix full of random variables.
-Matrix randomM() {
+Matrix random(int a, int b) {
 
-    Matrix result = {};
+    Matrix result(a, Vector(b, 0.0)); 
 
     for (int i = 0; i < 4; ++i) { 
         for (int j = 0; j < 4; ++j) { 
@@ -77,9 +63,9 @@ void displayMatrix(const Matrix& A) {
     }
 }
 
-
 Matrix outerProduct(const Vector& a, const Vector& b) {
-    Matrix result = {}; // Initialize with zeros
+    Matrix result(a.size(), Vector(a.size())); 
+
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             result[i][j] = a[i] * b[j];
@@ -88,10 +74,9 @@ Matrix outerProduct(const Vector& a, const Vector& b) {
     return result;
 }
 
-
 Vector operator+(const Vector& v1, const Vector& v2) {
 
-    Vector result = zerosV();
+    Vector result = zeros(v1.size()); 
     for (int i = 0; i < 4; i++) { 
         result[i] = v1[i] + v2[i];
     }
@@ -108,7 +93,7 @@ double operator*(const Vector& A, const Vector& B) {
 
 Vector operator-(const Vector& v1, const Vector& v2) { 
 
-    Vector result; 
+    Vector result(v1.size());  
     for (size_t i = 0; i < 4; i++) { 
         result[i] = v1[i] - v2[i]; 
     }
@@ -117,7 +102,7 @@ Vector operator-(const Vector& v1, const Vector& v2) {
 
 Vector operator*(const Vector& A, const double& s) {
    
-    Vector result;
+    Vector result(A.size());
 
     for (int i = 0; i < 4; ++i) {
         result[i] = s * A[i]; // Perform scalar multiplication
@@ -132,7 +117,7 @@ Vector operator*(const double& s, const Vector& A) {
 
 Vector operator/(const Vector& v1, const double& s) {  
 
-    Vector result; 
+    Vector result(v1.size());  
     for (int i = 0; i < 4; i++) {  
         result[i] = v1[i] / s;    
     }
@@ -140,10 +125,9 @@ Vector operator/(const Vector& v1, const double& s) {
     return result;  
 }
 
-
 Vector operator*(const Matrix& A, const Vector& B) {
 
-    Vector result = zerosV();
+    Vector result = zeros(B.size());
 
     for (int i = 0; i < 4; ++i) { 
         for (int k = 0; k < 4; ++k) { 
@@ -153,9 +137,9 @@ Vector operator*(const Matrix& A, const Vector& B) {
     return result;
 }
 
-
 Matrix operator/(const Matrix& A, const double& s) {
-    Matrix result;
+
+    Matrix result(A.size(), Vector(A[0].size())); 
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -168,7 +152,7 @@ Matrix operator/(const Matrix& A, const double& s) {
 
 Matrix operator+(const Matrix& A, const Matrix& B) {
 
-    Matrix result;
+    Matrix result(A.size(), Vector(A[0].size()));
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -182,7 +166,7 @@ Matrix operator+(const Matrix& A, const Matrix& B) {
 Matrix operator-(const Matrix& A, const Matrix& B) {
 
     // Initialize result matrix with proper size
-    Matrix result;
+    Matrix result(A.size(), Vector(A[0].size()));
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -195,7 +179,7 @@ Matrix operator-(const Matrix& A, const Matrix& B) {
 
 Matrix operator*(const double& s, const Matrix& A) {
     
-    Matrix result;
+    Matrix result(A.size(), Vector(A[0].size())); 
 
     // Multiply each element of the matrix by the scalar
     for (int i = 0; i < 4; ++i) {
@@ -213,7 +197,7 @@ Matrix operator*(const Matrix& A, const double& s) {
 
 Matrix operator*(const Matrix& A, const Matrix& B) {
 
-    Matrix result{};
+    Matrix result(A.size(), Vector(B[0].size()));
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -226,7 +210,6 @@ Matrix operator*(const Matrix& A, const Matrix& B) {
     return result;
 }
 
-
 ///// Matrix - Vector LU division
 
 // Performs LU decomposition: A = LU
@@ -234,8 +217,8 @@ void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U) {
 
     int n = A.size();
 
-    L = zerosM();
-    U = zerosM(); 
+    L = zeros(A.size(), A[0].size()); 
+    U = zeros(A.size(), A[0].size()); 
 
     for (int i = 0; i < n; i++) {
         L[i][i] = 1.0; // Diagonal of L is always 1
@@ -266,7 +249,7 @@ void LUDecomposition(const Matrix& A, Matrix& L, Matrix& U) {
 Vector forwardSubstitution(const Matrix& L, const Vector& B) {
 
     int n = L.size();
-    Vector Y = zerosV();
+    Vector Y = zeros(n); 
 
     for (int i = 0; i < n; i++) {
         Y[i] = B[i];
@@ -280,7 +263,7 @@ Vector forwardSubstitution(const Matrix& L, const Vector& B) {
 // Solves Ux = Y using backward substitution
 Vector backwardSubstitution(const Matrix& U, const Vector& Y) {
     int n = U.size();
-    Vector X = zerosV(); 
+    Vector X = zeros(n);   
 
     for (int i = n - 1; i >= 0; i--) {
         if (U[i][i] == 0.0) {
@@ -311,7 +294,7 @@ Vector operator/(const Vector& B, const Matrix& A) {
 Matrix forwardSubstitution(const Matrix& L, const Matrix& B) {
     int n = L.size();
     int m = B[0].size(); // Number of right-hand sides
-    Matrix Y = zerosM(); 
+    Matrix Y = zeros(n, m); 
 
     for (int i = 0; i < n; i++) {
         for (int col = 0; col < m; col++) {
@@ -328,7 +311,7 @@ Matrix forwardSubstitution(const Matrix& L, const Matrix& B) {
 Matrix backwardSubstitution(const Matrix& U, const Matrix& Y) {
     int n = U.size();
     int m = Y[0].size();
-    Matrix X = zerosM(); 
+    Matrix X = zeros(n, m); 
 
     for (int i = n - 1; i >= 0; i--) {
         for (int col = 0; col < m; col++) {

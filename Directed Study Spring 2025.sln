@@ -28,6 +28,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CMakeLists.txt = CMakeLists.txt
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chemical Equilibrium", "Chemical Equilibrium\Chemical Equilibrium.vcxproj", "{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -116,6 +118,14 @@ Global
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x64.Build.0 = Release|x64
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x86.ActiveCfg = Release|Win32
 		{F7687309-BEE5-48A0-AE96-A14A38CD216D}.Release|x86.Build.0 = Release|Win32
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Debug|x64.ActiveCfg = Debug|x64
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Debug|x64.Build.0 = Debug|x64
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Debug|x86.ActiveCfg = Debug|Win32
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Debug|x86.Build.0 = Debug|Win32
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Release|x64.ActiveCfg = Release|x64
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Release|x64.Build.0 = Release|x64
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Release|x86.ActiveCfg = Release|Win32
+		{D7EE0CDF-A81F-404C-A6F7-DCD0D3535709}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

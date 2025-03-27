@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LinearAlgebra.h"
-#include "GridGenerator.h"
+#include "GridGenerator.h" 
 #include <cstdlib>
 #include <fstream> 
 #include <omp.h>
@@ -15,26 +15,11 @@ using namespace std;
 
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
-constexpr double R = 287.0;
+constexpr double R = 287;
+constexpr double Ru = 8314; 
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
-
-
-// Set number of cells here
-constexpr int Nx = 500;
-constexpr int Ny = 500;
-
-// For CFD creation. 
-using CellTensor = array < array < Vector, Ny>, Nx>;
-using CellTesseract = array < array < Matrix, Ny>, Nx>;
-
-using iFaceTensor = array < array < Vector, Ny>, Nx + 1>;
-using iFaceTesseract = array < array <Matrix, Ny>, Nx + 1>;
-
-using jFaceTensor = array < array < Vector, Ny + 1>, Nx>;
-using jFaceTesseract = array < array <Matrix, Ny + 1>, Nx>;
-
 
 // Inline function that computes pressure from state vector
 inline double computePressure(const Vector& U) {
@@ -43,8 +28,9 @@ inline double computePressure(const Vector& U) {
 
 // Inline function that compuites Temperature from state vector
 inline double computeTemperature(const Vector& U) {
-	return ((gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]))) / (U[0] * R);
+	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
 }
+
 
 // This enum class is for setting boundary conditions types
 enum class BoundaryCondition {
@@ -126,37 +112,34 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 }
 
 
+Vector primtoCons(const Vector& V);
+Vector constoPrim(const Vector& U);
+
 class Solver { 
 
 private:
 
-	CellTensor U, dU_new, dU_old;   
-
-	iFaceTensor i_Fluxes; 
-	iFaceTesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians; 
-
-	jFaceTensor j_Fluxes;
-	jFaceTesseract j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians;
-
-	Grid& grid;   
-	double dt, inner_residual; 
-
 	string gridtype; 
 
-	BoundaryConditions BoundaryType; 
-	double CFL, Tw; 
-	Vector V_inlet, U_inlet;  
+	const int Nx, Ny, progress_update; 
+	double CFL, Tw, dt, inner_residual; 
+
+	Vector V_inlet, U_inlet;    
+
+	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
+	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
+
+	Grid& grid;    
+	BoundaryConditions BoundaryType;  
 	inlet_conditions INLET; 
-	int progress_update;  
+
 
 public: 
 
 	double outer_residual;
 
-	Solver(const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update); 
+	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector primtoCons(const Vector& V);  
-	Vector constoPrim(const Vector& U);
 	Vector constoViscPrim(const Vector& U); 
 
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
@@ -164,7 +147,6 @@ public:
 
 	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
 	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
-
 
 	void solve_inviscid();  
 	void solve_viscous();  
@@ -198,6 +180,8 @@ public:
 		DURATION duration = end - start;
 		cout << "Time taken: " << duration.count() << endl;
 	}
+
+	Vector minmod(Vector& Ui, Vector& Uii);
 
 
 };

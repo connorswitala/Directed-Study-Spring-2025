@@ -17,16 +17,32 @@ constexpr double pi = 3.141592653;
 
 void printMemoryUsage(); 
 
-typedef array<double, 4> Vector;   
-typedef array<Vector, 4> Matrix; 
+
+typedef vector<double> Vector; 
+typedef vector<Vector> Matrix;
+typedef vector<Matrix> Tensor;
+typedef vector<Tensor> Tesseract; 
+
   
-Vector zerosV();
-Matrix zerosM();
-Vector onesV();
-Matrix onesM(); 
-Matrix identity();
-Vector randomV();
-Matrix randomM();
+inline Vector zeros(int a) {
+    return Vector(a, 0.0);
+}
+
+inline Matrix zeros(int a, int b) {
+    return Matrix(a, Vector(b, 0.0));
+}
+
+inline Vector ones(int a) {
+    return Vector{ 1, 1, 1, 1 };
+}
+
+inline Matrix ones(int a, int b) {
+    return Matrix(a, Vector(b, 1.0));
+}
+
+Matrix identity(int a);
+Vector random(int a);
+Matrix random(int a, int b);
 
 void displayVector(const Vector& A);
 void displayMatrix(const Matrix& A);
