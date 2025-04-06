@@ -15,7 +15,7 @@ using namespace std;
 
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
-constexpr double R = 287;
+constexpr double R = 287.0;
 constexpr double Ru = 8314; 
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
@@ -29,6 +29,29 @@ inline double computePressure(const Vector& U) {
 // Inline function that compuites Temperature from state vector
 inline double computeTemperature(const Vector& U) {
 	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
+}
+
+
+Vector primtoCons(const Vector& V) {
+
+	Vector U(4);
+	U[0] = V[0];
+	U[1] = V[0] * V[1];
+	U[2] = V[0] * V[2];
+	U[3] = V[3] / (gamma - 1) + 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2]);
+
+	return U;
+}
+
+Vector constoPrim(const Vector& U) {
+
+	static Vector V(4);
+	V[0] = U[0];
+	V[1] = U[1] / U[0];
+	V[2] = U[2] / U[0];
+	V[3] = (U[3] - 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2])) * (gamma - 1);
+
+	return V;
 }
 
 
@@ -112,9 +135,6 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 }
 
 
-Vector primtoCons(const Vector& V);
-Vector constoPrim(const Vector& U);
-
 class Solver { 
 
 private:
@@ -185,10 +205,3 @@ public:
 
 
 };
-
-
-
-
-
-
- 
