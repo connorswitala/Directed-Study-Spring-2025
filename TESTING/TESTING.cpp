@@ -6,31 +6,22 @@
 #include <cstdlib>
 #include <fstream> 
 #include "LinearAlgebra.h"
-
-
+#include "GridGenerator.h" 
+#include "2DFVSLibrary.h" 
 
 using namespace std; 
 
-
-
-
-
-
-
-
-
 int main() {
 
-    Vector A = random(4), B = random(4);
-    Matrix C = random(4, 4), D = random(4, 4); 
+    int Nx = 50, Ny = 100; 
+
+    CylinderGrid grid(Nx, Ny, 1, 3, 4.5, 0.0001, pi / 2, 3 * pi / 2);   
+
+    int i = Nx - 1, j = Ny - 1;
 
 
-    Vector E = A/C;
-    Matrix F = C/D;
+	cout << grid.jNorms(i, j).x << " " << grid.jNorms(i, j).y << endl;  
 
-
-    displayVector(E);
-    displayMatrix(F); 
 
     return 0;
 }

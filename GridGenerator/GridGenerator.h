@@ -64,7 +64,7 @@ public:
 class CylinderGrid : public Grid {
 private:
     int Nx, Ny;
-    double Cylinder_Radius, R1, R2, dr_min, theta1, theta2; 
+    double Cylinder_Radius, R1, R2, d_min, theta1, theta2;  
 
     vector<vector<Point>> vertices;
     vector<vector<Point>> cellCenters;
@@ -73,7 +73,7 @@ private:
     vector<vector<double>> iAreas, jAreas, cellVolumes;
 
 public:
-    CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double dr_min, double theta1, double theta2);  
+    CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double d_min, double theta1, double theta2);  
 
     double Volume(int i, int j) const override;
     Point Center(int i, int j) const override;

@@ -122,9 +122,9 @@ private:
 	string gridtype; 
 
 	const int Nx, Ny, progress_update; 
-	double CFL, Tw, dt, inner_residual; 
+	double CFL, Tw, dt, inner_residual, t_tot;  
 
-	Vector V_inlet, U_inlet;    
+	Vector V_inlet, U_inlet, Global_Residual, t, iteration; 
 
 	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
 	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
@@ -168,8 +168,11 @@ public:
 	void compute_inner_residual();
 	void compute_outer_residual(); 
 
+	void viscous_calculations();  
+
 	void write_2d_csv(const string& filename);
 	void write_1d_csv(const string& filename);
+	void write_residual_csv(); 
 	
 	void time(void (Solver::* func)()) { 
 		auto start = TIME;
