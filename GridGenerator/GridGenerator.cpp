@@ -12,7 +12,7 @@ double NewtonMethod(double max_dist, int n_points, double d_min) {
 
 	while (ratio >= 0.00000000001) {
 		func = d_min - max_dist * (exp(k / (n_points - 1)) - 1) / (exp(k) - 1);
-		func_prime = -max_dist * (((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)));
+		func_prime = -max_dist * ( ((1 / (n_points - 1) * exp(k / (n_points - 1))) * (exp(k) - 1) - (exp(k / (n_points - 1)) - 1) * exp(k)) / ((exp(k) - 1) * (exp(k) - 1)) );
 		k_new = k - func / func_prime; 
 		ratio = fabs(k - k_new); 
 		k = k_new;
@@ -192,7 +192,7 @@ inline Point RampGrid::jNorms(int i, int j) const {
 
 
 CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, double R2, double d_min, double theta1, double theta2) :
-	Nx(Nx), Ny(Ny), Cylinder_Radius(Cylinder_Radius), R1(R1), R2(R2), dr_min(dr_min), theta1(theta1), theta2(theta2),
+	Nx(Nx), Ny(Ny), Cylinder_Radius(Cylinder_Radius), R1(R1), R2(R2), d_min(d_min), theta1(theta1), theta2(theta2),
 	vertices(Nx + 1, vector<Point>(Ny + 1)), cellCenters(Nx, vector<Point>(Ny)), cellVolumes(Nx, vector<double>(Ny)),
 	iAreas(Nx + 1, vector<double>(Ny)), jAreas(Nx, vector<double>(Ny + 1)), iNormals(Nx + 1, vector<Point>(Ny)), jNormals(Nx, vector<Point>(Ny + 1)) {
 
@@ -216,11 +216,12 @@ CylinderGrid::CylinderGrid(int Nx, int Ny, double Cylinder_Radius, double R1, do
 	for (int i = 0; i < Ntheta; ++i) {
 
 		R_max = R1 + (R2 - R1) * cos(theta[i]);
-		k1 = NewtonMethod(R_max, Nr, dr_min);
+		k1 = NewtonMethod(R_max, Nr, d_min);
+
 		for (int j = 1; j < Nr; ++j) {
 			r[i][j] = r[i][0] + R_max * ((exp(k1 * j / (Nr - 1)) - 1) / (exp(k1) - 1));
 		}
-
+	
 	}
 
 	for (int i = 0; i <= Nx; ++i) {
@@ -307,8 +308,6 @@ Point CylinderGrid::jNorms(int i, int j) const {
 
 
 
- 
-//
 ///////////////////////////////////////////////////
 /////////////// Square Grid functions /////////////
 ///////////////////////////////////////////////////

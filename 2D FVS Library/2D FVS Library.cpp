@@ -28,10 +28,9 @@ Vector constoPrim(const Vector& U) {
 	return V;
 }
 
-
 Solver::Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update) : Nx(Nx), Ny(Ny), 
-Tw(Tw), INLET(INLET), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
-i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), 
+Tw(Tw), INLET(INLET), Global_Residual(Global_Residual), t(t), t_tot(t_tot), iteration(iteration), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
+i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), A_rho_i(A_rho_i), A_rho_j(A_rho_j), i_rho_flux(i_rho_flux), j_rho_flux(j_rho_flux),
 j_minus_inviscid_Jacobians(j_minus_inviscid_Jacobians), i_viscous_Jacobians(i_viscous_Jacobians), j_viscous_Jacobians(j_viscous_Jacobians),  gridtype(gridtype), dt(dt), 
 CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progress_update(progress_update){
 
@@ -40,17 +39,21 @@ CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progre
 	dU_new = Tensor(Nx, Matrix(Ny, Vector(4, 0.0)));
 	dU_old = Tensor(Nx, Matrix(Ny, Vector(4, 0.0)));
 
-	i_Fluxes = Tensor(Nx + 1, Matrix(Ny, Vector(4, 0.0)));
-	j_Fluxes = Tensor(Nx, Matrix(Ny + 1, Vector(4, 0.0)));
+	i_Fluxes = Tensor(Nx + 1, Matrix(Ny, Vector(4, 0.0))); 
+	j_Fluxes = Tensor(Nx, Matrix(Ny + 1, Vector(4, 0.0))); 
+	i_rho_flux = Tensor(Nx + 1, Matrix(Ny, Vector(4, 0.0))); 
+	j_rho_flux = Tensor(Nx, Matrix(Ny + 1, Vector(4, 0.0))); 
 
-	i_plus_inviscid_Jacobians = Tesseract(Nx + 1, Tensor(Ny, Matrix(4, Vector(4, 0.0))));
+
+	A_rho_i = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));
+	j_plus_inviscid_Jacobians = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));
 	i_minus_inviscid_Jacobians = Tesseract(Nx + 1, Tensor(Ny, Matrix(4, Vector(4, 0.0)))); 
 	i_viscous_Jacobians = Tesseract(Nx + 1, Tensor(Ny, Matrix(4, Vector(4, 0.0)))); 
 
+	A_rho_j = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));
 	j_plus_inviscid_Jacobians = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));
 	j_minus_inviscid_Jacobians = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));
 	j_viscous_Jacobians = Tesseract(Nx, Tensor(Ny + 1, Matrix(4, Vector(4, 0.0))));  
-	
 
 	outer_residual = 1.0;
 	inner_residual = 1.0; 
@@ -322,10 +325,15 @@ void Solver::solve_inviscid () {
 
 	cout << "\033[33mRunning Inviscid DPLR for " << Nx << " by " << Ny << " " << gridtype << " with a CFL of " << fixed << setprecision(2) << CFL << "...\033[0m" << "\n\n";
 	string filename = "Inviscid " + to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
-	
+
 	auto start = TIME; 
 	int counter = 0;
- 
+	
+	t_tot = 0.0; 
+
+	t.push_back(0.0); 
+	iteration.push_back(0.0); 
+	Global_Residual.push_back(10.0);
 
 	while (outer_residual >= 1e-6) { 
 
@@ -334,9 +342,9 @@ void Solver::solve_inviscid () {
 		solve_inviscid_timestep();
 
 		compute_outer_residual();
-
-		if (counter == 0) outer_residual = 1.0;
-		counter++;
+	
+		if (counter == 0) outer_residual = 1.0;		
+		counter++; 
 
 		if (counter % progress_update == 0) { 
 			auto end = TIME;
@@ -349,10 +357,15 @@ void Solver::solve_inviscid () {
 			write_2d_csv(filename); 
 		}
 
+		t_tot += dt;
+		t.push_back(t_tot);  
+		Global_Residual.push_back(outer_residual); 
+		iteration.push_back(counter); 
 
 	}
 
 	write_2d_csv(filename);  
+	write_residual_csv();  
 
 	auto end = TIME;
 	DURATION duration = end - start; 
@@ -369,6 +382,12 @@ void Solver::solve_viscous() {
 	auto start = TIME;
 	int counter = 0;
 
+	t_tot = 0.0;
+
+	t.push_back(0.0);
+	iteration.push_back(0.0);
+	Global_Residual.push_back(0.0);
+
 	while (outer_residual >= 1e-6) {
 
 		compute_dt();
@@ -379,6 +398,7 @@ void Solver::solve_viscous() {
 
 		if (counter == 0) outer_residual = 1.0;
 		counter++;
+
 
 		if (counter % progress_update == 0) { 
 			auto end = TIME;
@@ -391,17 +411,21 @@ void Solver::solve_viscous() {
 			write_2d_csv(filename);
 		}
 
+		t_tot += dt;
+		t.push_back(t_tot);  
+		Global_Residual.push_back(outer_residual);  
+		iteration.push_back(counter);  
+
 	}
 
 	write_2d_csv(filename); 
 	write_1d_csv("1D VISCOUS.csv");     
+	write_residual_csv(); 
+	viscous_calculations();
 
 	auto end = TIME;
 	DURATION duration = end - start;
 	cout << "Program complete in " << duration.count() << " seconds." << endl;
-
-
-
 }
 
 void Solver::solve_viscous_timestep() {
@@ -431,7 +455,6 @@ void Solver::solve_viscous_timestep() {
 			}
 		}
 	}
-
 }
 
 void Solver::solve_inviscid_timestep() {
@@ -494,7 +517,7 @@ void Solver::compute_inviscid_jacobians() {
 		Sii = compute_inviscid_state(Um, nx, ny);
 
 		l = 0.5 * (Si.uprime + fabs(Si.uprime));
-		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l);
+		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)));
 
 		V1_Plus = { lc * Si.k,
@@ -516,7 +539,7 @@ void Solver::compute_inviscid_jacobians() {
 		n = { -Sii.uprime, nx, ny, 0 };
 
 		l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 		V1_Minus = { lc * Sii.k,
@@ -535,7 +558,6 @@ void Solver::compute_inviscid_jacobians() {
 		i_minus_inviscid_Jacobians[0][j] = Y;  
 		i_Fluxes[0][j] = X * Ui + Y * Uii;    
 	}
-
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on right boundary
 	for (int j = 0; j < Ny; ++j) {
@@ -558,7 +580,7 @@ void Solver::compute_inviscid_jacobians() {
 		Sii = compute_inviscid_state(Um, nx, ny);
 
 		l = 0.5 * (Si.uprime + fabs(Si.uprime));
-		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l);
+		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)));
 
 		V1_Plus = { lc * Si.k,
@@ -580,7 +602,7 @@ void Solver::compute_inviscid_jacobians() {
 		n = { -Sii.uprime, nx, ny, 0 };
 
 		l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 		V1_Minus = { lc * Sii.k,
@@ -623,7 +645,7 @@ void Solver::compute_inviscid_jacobians() {
 		Sii = compute_inviscid_state(Um, nx, ny);
 
 		l = 0.5 * (Si.uprime + fabs(Si.uprime));
-		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l);
+		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)));
 
 		V1_Plus = { lc * Si.k,
@@ -645,7 +667,7 @@ void Solver::compute_inviscid_jacobians() {
 		n = { -Sii.uprime, nx, ny, 0 };
 
 		l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 		V1_Minus = { lc * Sii.k,
@@ -687,7 +709,7 @@ void Solver::compute_inviscid_jacobians() {
 		Sii = compute_inviscid_state(Um, nx, ny);
 
 		l = 0.5 * (Si.uprime + fabs(Si.uprime));
-		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l);
+		lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)));
 
 		V1_Plus = { lc * Si.k,
@@ -709,7 +731,7 @@ void Solver::compute_inviscid_jacobians() {
 		n = { -Sii.uprime, nx, ny, 0 };
 
 		l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+		lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 		lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 		V1_Minus = { lc * Sii.k,
@@ -753,7 +775,7 @@ void Solver::compute_inviscid_jacobians() {
 			Sii = compute_inviscid_state(Um, nx, ny);
 
 			l = 0.5 * (Si.uprime + fabs(Si.uprime));
-			lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l);
+			lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l);
 			lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)));
 
 			V1_Plus = { lc * Si.k,
@@ -776,7 +798,7 @@ void Solver::compute_inviscid_jacobians() {
 			n = { -Sii.uprime, nx, ny, 0 }; 
 
 			l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-			lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+			lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 			lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 			V1_Minus = { lc * Sii.k,
@@ -796,9 +818,6 @@ void Solver::compute_inviscid_jacobians() {
 			i_Fluxes[i][j] = X * Ui + Y * Uii;   
 		}
 	}
-
-
-
 
 	// Inner j-faces 
 	for (int i = 0; i < Nx; ++i) {
@@ -822,7 +841,7 @@ void Solver::compute_inviscid_jacobians() {
 			Sii = compute_inviscid_state(Um, nx, ny); 
 
 			l = 0.5 * (Si.uprime + fabs(Si.uprime));
-			lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - l); 
+			lc = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) + 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a)) - 2*l); 
 			lt = 0.5 * (0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a)) - 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a))); 
 
 			V1_Plus = { lc * Si.k,
@@ -844,7 +863,7 @@ void Solver::compute_inviscid_jacobians() {
 			n = { -Sii.uprime, nx, ny, 0 };
 
 			l = 0.5 * (Sii.uprime - fabs(Sii.uprime));
-			lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - l);
+			lc = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) + 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)) - 2*l);
 			lt = 0.5 * (0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a)) - 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a)));
 
 			V1_Minus = { lc * Sii.k,
@@ -2130,6 +2149,59 @@ void Solver::compute_outer_residual() {
 	outer_residual = sqrt(outer_residual);
 }
 
+void Solver::viscous_calculations() {
+
+	Vector tau(Nx), q(Nx), y_plus(Nx), Re_cell(Nx), velocity_profile(Ny), temperature_profile(Ny);
+	double rho, u, T, mu, k, ut, dy;
+
+	for (int i = 0; i < Nx; ++i) {
+
+		rho = U[i][0][0];
+		u = U[i][0][1] / U[i][0][0];
+		T = computeTemperature(U[i][0]);
+		mu = 1.458 * 1e-6 * T * sqrt(T) / (T + 110.3);
+		k = cp * mu / Pr;
+		dy = grid.Center(i, 0).y;
+
+
+		tau[i] = mu * u / dy;
+		q[i] = -k * (T - Tw) / dy;
+		y_plus[i] = rho * sqrt(tau[i] / rho) * dy / mu;
+		Re_cell[i] = rho * u * grid.jArea(i, 0) / mu;
+
+	}
+
+
+	for (int j = 0; j < Ny; ++j) {
+		u = U[0][j][1] / U[0][j][0];
+		T = computeTemperature(U[0][j]);  
+
+		velocity_profile[j] = u;
+		temperature_profile[j] = T; 
+	}
+		
+	string filename = "Viscous_gradient_inclusive_terms.csv";
+	ofstream file(filename); 
+
+	file << "x_points, tau, q, y_plus, Re_cell";
+	for (int i = 0; i < Nx; ++i) {
+		file << grid.Center(i, 0).x << ", " << tau[i] << ", " << q[i] << ", " << y_plus[i] << ", " << Re_cell[i] << endl;
+	}
+
+	file.close(); 
+
+
+	filename = "Velocity/Temperature_profile.csv";
+	ofstream file2(filename);
+	file2 << "y_points, velocity_profile, temperature_profile" << endl;
+	for (int j = 0; j < Ny; ++j) {
+		file2 << grid.Center(0, j).y << ", " << velocity_profile[j] << ", " << temperature_profile[j] << endl;
+	}
+	file2.close(); 
+
+
+}
+
 Vector Solver::minmod(Vector& Ui, Vector& Uii) {
 	
 	Vector result(4);  
@@ -2145,6 +2217,19 @@ Vector Solver::minmod(Vector& Ui, Vector& Uii) {
 
 }
 
+void Solver::write_residual_csv() {
+
+	string filename = "RESIDUAL_PLOT.csv";
+
+	ofstream file(filename);
+	file << "Residual, time, iteration" << endl;
+	for (int i = 0; i < Global_Residual.size(); ++i) {
+		file << Global_Residual[i] << ", " << t[i] << ", " << iteration[i] << endl;
+	}
+	file.close();
+	cout << "\033[36mResidual File saved successfully as \"" << filename << "\"\033[0m" << endl;
+
+}
 
 void Solver::write_2d_csv(const string& filename) {
 
