@@ -131,6 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>C:\Users\Connor\source\repos\Directed Study Spring 2025\GridGenerator;C:\Users\Connor\source\repos\Directed Study Spring 2025\Linear Algebra Library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -155,9 +156,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GridGenerator\GridGenerator.vcxproj">
-      <Project>{e5b98468-1371-41d2-8034-3e985fa84d47}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Linear Algebra Library\Linear Algebra Library.vcxproj">
       <Project>{d480459d-2db4-4606-8e7f-21ad3cf0d084}</Project>
     </ProjectReference>
