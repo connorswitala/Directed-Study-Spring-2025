@@ -7,6 +7,8 @@
 #include <omp.h>
 #include <chrono> 
 #include <iomanip>
+#include <sstream>
+#include <algorithm>
 
 #define TIME chrono::high_resolution_clock::now(); 
 #define DURATION chrono::duration<double> duration; 
@@ -14,24 +16,27 @@
 using namespace std;
 
 // Global constants for fluid dynamics
-constexpr double gamma = 1.4;
-constexpr double R = 287;
+
 constexpr double Ru = 8314; 
-constexpr double cv = R / (gamma - 1);
-constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
 // Inline function that computes pressure from state vector
-inline double computePressure(const Vector& U) {
+inline double computePressure(const Vector& U, double& gamma) { 
 	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
 }
-
 // Inline function that compuites Temperature from state vector
-inline double computeTemperature(const Vector& U) {
-	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
+inline double computeTemperature(const Vector& U, ThermoEntry& Thermo) { 
+	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (Thermo.gamma - 1) / Thermo.R; 
 }
 
+inline double computeInternalEnergy(const Vector& U) {
+	return (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2])) / U[0];
+}
 
+inline double computeSoundSpeed(const Vector& U, ThermoEntry& Thermo) {
+	double p = computePressure(U, Thermo.gamma); 
+	return sqrt(p / (U[0] * U[0]) * Thermo.dpde + Thermo.dpdrho); 
+}
 // This enum class is for setting boundary conditions types
 enum class BoundaryCondition {
 	IsothermalWall,
@@ -53,16 +58,6 @@ struct BoundaryConditions {
 	BoundaryConditions(BoundaryCondition left, BoundaryCondition right, BoundaryCondition bottom, BoundaryCondition top) : left(left), right(right), bottom(bottom), top(top) {}
 
 };
-
-// This set boundary conditions based on text from the UI
-inline BoundaryCondition getBoundaryCondition(const string& input) {
-	if (input == "inlet") return BoundaryCondition::Inlet;
-	if (input == "outlet") return BoundaryCondition::Outlet;
-	if (input == "symmetry") return BoundaryCondition::Symmetry;
-	if (input == "adiabatic") return BoundaryCondition::AdiabaticWall;
-	if (input == "isothermal") return BoundaryCondition::IsothermalWall;
-	return BoundaryCondition::Undefined;  
-}
 
 // This sets the inlet flow conditions from inputs in the UI
 struct inlet_conditions {
@@ -94,6 +89,10 @@ inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double 
 	return S; 
 }
 
+
+// This set boundary conditions based on text from the UI
+inline BoundaryCondition getBoundaryCondition(const string& input);
+
 // This function computes the states for the viscous Jacobians
 inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
 	Viscous_State S;
@@ -111,9 +110,16 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 	return S;
 }
 
+struct ThermoEntry {
+	double rho, e, p, T, R, cv, gamma, dpdrho, dpde;
+};
 
-Vector primtoCons(const Vector& V);
-Vector constoPrim(const Vector& U);
+vector<ThermoEntry> load_csv(const string& filename);
+int find_index(double target, double min, double max, int n);
+ThermoEntry bilinear_interpolate(const std::vector<ThermoEntry>& table, double rho, double e); 
+
+Vector primtoCons(const Vector& V, double& gamma); 
+Vector constoPrim(const Vector& U, double& gamma); 
 
 class Solver { 
 
@@ -125,7 +131,8 @@ private:
 	double CFL, Tw, dt, inner_residual, t_tot;  
 
 	Vector V_inlet, U_inlet, Global_Residual, t, iteration; 
-
+	vector<ThermoEntry> chem_lookup_table;    
+	vector<vector<ThermoEntry>> cell_thermo; 
 	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
 	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
 
@@ -140,13 +147,15 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector constoViscPrim(const Vector& U); 
+	Vector constoViscPrim(const Vector& U, ThermoEntry& Thermo); 	  
 
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
 	Vector inviscid_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
 
 	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
 	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
+
+	void get_chemistry();
 
 	void solve_inviscid();  
 	void solve_viscous();  

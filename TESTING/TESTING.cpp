@@ -1,112 +1,46 @@
 
+
 #include <iostream>
-#include <cmath>
-#include <vector>
-#include <cassert>
-#include <cstdlib>
-#include <fstream> 
-#include "LinearAlgebra.h"
-#include "GridGenerator.h" 
-#include "2DFVSLibrary.h" 
-#include <string>
-#include <sstream>  // for std::stringstream
+#include <vector> 
+using namespace std;
 
-using namespace std; 
+typedef vector<double> Vector;  
 
-double find_closest(const std::vector<double>& subject, double target) {
+struct ThermoEntry {
+    double rho, e, p, T, R, cv, gamma, dpdrho, dpde;
+};
 
-    double low = subject[0]; 
-    double high = subject[subject.size() - 1]; // Initialize last_value to the first element  
-     
-    if (target <= subject[low]) return low;   // target smaller than smallest 
-    if (target >= subject[high]) return high; // target bigger than largest 
 
-    while (low <= high) {
-        int mid = (low + high) / 2;
-
-        if (subject[mid] == target) {
-            return mid;  // exact match
-        }
-        else if (subject[mid] < target) {
-            low = mid + 1;
-        }
-        else {
-            high = mid - 1;
-        }
-    }
-
-    // Now low and high crossed over
-    // Choose closer of array[low] and array[high] 
-    if (low >= subject.size()) return high;
-    if (high < 0) return low;
-
-    if (std::abs(subject[low] - target) < std::abs(subject[high] - target)) {
-        return low;
-    }
-    else {
-        return high;
-    }
+inline double computePressure(const Vector& U, double& gamma) {
+    return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
 }
 
-
-int main() {
-
-	Vector rho, e, R_mix, cv_mix, gamma, T, p, dpde, dpdrho;  
-
-	ifstream file("C:/Users/Connor/source/repos/Directed Study Spring 2025/Chemical Equilibrium/Chemical_Equilibrium_Lookup_Table.csv"); 
-
-	if (!file.is_open()) {
-		std::cerr << "Could not open the file!\n";
-		return 1;
-	}
-
-    string line;
-
-    // Step 1: Read and ignore the header
-    getline(file, line);
-
-    // Step 2: Read the actual data
-    while (getline(file, line)) {
-        stringstream ss(line);
-        string value;
-
-        // Read each column value
-        if (getline(ss, value, ',')) {
-            rho.push_back(stod(value)); 
-            cout << value << endl;
-        }
-        if (getline(ss, value, ',')) {
-            e.push_back(stod(value));
-        }
-        if (getline(ss, value, ',')) {
-            p.push_back(stod(value));
-        }
-        if (getline(ss, value, ',')) {
-            T.push_back(stod(value)); 
-        }
-        if (getline(ss, value, ',')) {
-            R_mix.push_back(stod(value)); 
-        }
-        if (getline(ss, value, ',')) {
-            cv_mix.push_back(stod(value));  
-        }
-        if (getline(ss, value, ',')) {
-            gamma.push_back(stod(value)); 
-        }
-        if (getline(ss, value, ',')) {
-            dpdrho.push_back(stod(value)); 
-        }
-        if (getline(ss, value, ',')) {
-            dpde.push_back(stod(value)); 
-        } 
-    }
-
-    file.close();
-
-    double target = 0.0254; 
-	int index = find_closest(rho, target); // Find the index of the closest value in rho 
-    cout << index;
-
-
-
+inline double computeSoundSpeed(const Vector& U, ThermoEntry& Thermo) {
+    double p = computePressure(U, Thermo.gamma);
+    return sqrt(p / (U[0] * U[0]) * Thermo.dpde + Thermo.dpdrho);
 }
+
+    int main() {
+
+
+        double e = 500 * 717; 
+        double rho = 0.3; 
+
+        ThermoEntry test;
+        test.cv = 717;
+		test.gamma = 1.4; 
+		test.R = 287;
+        test.dpdrho = (test.gamma - 1) * e; 
+		test.dpde = (test.gamma - 1) * rho; 
+		test.p = (test.gamma - 1) * e * rho;   
+		test.rho = rho;
+		test.e = e;
+		test.T = test.p / (test.rho * test.R);  
+        
+        Vector U = { rho, 0.0, 0.0, rho * (e) };
+		double a = computeSoundSpeed(U, test);  
+
+		cout << "Sound Speed: " << a << endl;
+
+        return 0;
+    }

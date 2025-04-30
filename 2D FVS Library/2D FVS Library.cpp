@@ -6,7 +6,7 @@
 #include "2DFVSLibrary.h"
 
 
-Vector primtoCons(const Vector& V) {
+Vector primtoCons(const Vector& V, double& gamma) { 
 
 	Vector U(4);
 	U[0] = V[0];
@@ -16,8 +16,7 @@ Vector primtoCons(const Vector& V) {
 
 	return U;
 }
-
-Vector constoPrim(const Vector& U) {
+Vector constoPrim(const Vector& U, double& gamma) { 
 
 	static Vector V(4);
 	V[0] = U[0];
@@ -28,11 +27,89 @@ Vector constoPrim(const Vector& U) {
 	return V;
 }
 
+
+
+vector<ThermoEntry> load_csv(const string& filename) {
+	ifstream file(filename);
+	string line;
+	vector<ThermoEntry> data;
+
+	getline(file, line); // skip header
+
+	while (getline(file, line)) {
+		stringstream ss(line);
+		ThermoEntry entry;
+		string temp;
+		getline(ss, temp, ','); entry.rho = stod(temp);
+		getline(ss, temp, ','); entry.e = stod(temp);
+		getline(ss, temp, ','); entry.p = stod(temp);
+		getline(ss, temp, ','); entry.T = stod(temp);
+		getline(ss, temp, ','); entry.R = stod(temp);
+		getline(ss, temp, ','); entry.cv = stod(temp);
+		getline(ss, temp, ','); entry.gamma = stod(temp);
+		getline(ss, temp, ','); entry.dpdrho = stod(temp);
+		getline(ss, temp, ','); entry.dpde = stod(temp);
+		data.push_back(entry);
+	}
+	return data;
+}
+int find_index(double target, double min, double max, int n) {
+	double delta = (max - min) / (n - 1);
+	int idx = static_cast<int>((target - min) / delta);
+	if (idx < 0) idx = 0;
+	if (idx > n - 2) idx = n - 2;
+	return idx;
+}
+ThermoEntry bilinear_interpolate(const std::vector<ThermoEntry>& table, double rho, double e) {
+
+	int n_rho = 200, n_e = 200;
+	double rho_min = 1e-4, rho_max = 10.0, e_min = 3e5, e_max = 2e7;
+
+	int i = find_index(rho, rho_min, rho_max, n_rho);
+	int j = find_index(e, e_min, e_max, n_e);
+
+	double drho = (rho_max - rho_min) / (n_rho - 1);
+	double de = (e_max - e_min) / (n_e - 1);
+
+	double rho_i = rho_min + i * drho;
+	double e_j = e_min + j * de;
+	double t = (rho - rho_i) / drho;
+	double u = (e - e_j) / de;
+
+	auto get = [&](int ii, int jj) -> const ThermoEntry& {
+		return table[ii * n_e + jj];
+		};
+
+	ThermoEntry Q11 = get(i, j);
+	ThermoEntry Q21 = get(i + 1, j);
+	ThermoEntry Q12 = get(i, j + 1);
+	ThermoEntry Q22 = get(i + 1, j + 1);
+
+	ThermoEntry result;
+	auto lerp2D = [&](double a, double b, double c, double d) {
+		return (1 - t) * (1 - u) * a + t * (1 - u) * b + (1 - t) * u * c + t * u * d;
+		};
+
+	result.rho = rho;
+	result.e = e;
+	result.T = lerp2D(Q11.T, Q21.T, Q12.T, Q22.T);
+	result.R = lerp2D(Q11.R, Q21.R, Q12.R, Q22.R);
+	result.cv = lerp2D(Q11.cv, Q21.cv, Q12.cv, Q22.cv);
+	result.gamma = lerp2D(Q11.gamma, Q21.gamma, Q12.gamma, Q22.gamma);
+	result.p = lerp2D(Q11.p, Q21.p, Q12.p, Q22.p);
+	result.dpdrho = lerp2D(Q11.dpdrho, Q21.dpdrho, Q12.dpdrho, Q22.dpdrho);
+	result.dpde = lerp2D(Q11.dpde, Q21.dpde, Q12.dpde, Q22.dpde);
+
+	return result;
+}
+
+
+
 Solver::Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update) : Nx(Nx), Ny(Ny), 
 Tw(Tw), INLET(INLET), Global_Residual(Global_Residual), t(t), t_tot(t_tot), iteration(iteration), V_inlet(V_inlet), U_inlet(U_inlet), grid(grid), BoundaryType(BoundaryType), U(U), dU_new(dU_new), dU_old(dU_old), i_Fluxes(i_Fluxes), j_Fluxes(j_Fluxes), 
 i_plus_inviscid_Jacobians(i_plus_inviscid_Jacobians), j_plus_inviscid_Jacobians(j_plus_inviscid_Jacobians), i_minus_inviscid_Jacobians(i_minus_inviscid_Jacobians), 
 j_minus_inviscid_Jacobians(j_minus_inviscid_Jacobians), i_viscous_Jacobians(i_viscous_Jacobians), j_viscous_Jacobians(j_viscous_Jacobians),  gridtype(gridtype), dt(dt), 
-CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progress_update(progress_update){
+CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), cell_thermo(cell_thermo), chem_lookup_table(chem_lookup_table), progress_update(progress_update){
 
 	V_inlet = Vector(4); U_inlet = Vector(4); 
 	U = Tensor(Nx, Matrix(Ny, Vector(4, 0.0)));
@@ -72,14 +149,17 @@ CFL(CFL), inner_residual(inner_residual), outer_residual(outer_residual), progre
 		}
 	}
 
+	string chemistry_table = "C:/Users/Connor/source/repos/Directed Study Spring 2025/Chemical Equilibrium/Chemical_Equilibrium_Lookup_Table.csv";  // path to your CSV file
+	vector<ThermoEntry> chem_lookup_table = load_csv(chemistry_table);     
+
 };   
 
-Vector Solver::constoViscPrim(const Vector& U) { 
+Vector Solver::constoViscPrim(const Vector& U, ThermoEntry& Thermo) {   
 	Vector result(4);
 	result[0] = U[0];
 	result[1] = U[1] / U[0];
 	result[2] = U[2] / U[0];
-	result[3] = computeTemperature(U); 
+	result[3] = computeTemperature(U, Thermo); 
 	return result;  
 }
 
@@ -130,7 +210,6 @@ Matrix Solver::inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, c
 	}
 
 }
-
 Vector Solver::inviscid_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals) {
 
 	Vector ghost(4);
@@ -239,7 +318,6 @@ Matrix Solver::viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, co
 	}
 
 }
-
 Vector Solver::viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals) {
 
 	Vector ghost(4);
@@ -295,6 +373,20 @@ Vector Solver::viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, co
 
 }
 
+void Solver::get_chemistry() {
+
+	double e = 0;
+
+	for (int i = 0; i < Nx; ++i) {
+		for (int j = 0; j < Ny; ++j) {
+
+			e = computeInternalEnergy(U[i][j]);
+			cell_thermo[i][j] = bilinear_interpolate(chem_lookup_table, U[i][j][0], e);
+
+		}
+	}
+}
+
 void Solver::compute_dt() {  
 
 	Vector V(4); 
@@ -306,7 +398,7 @@ void Solver::compute_dt() {
 			V = constoPrim(U[i][j]);
 			dx = min(grid.jArea(i, j), grid.jArea(i, j + 1));
 			dy = min(grid.iArea(i, j), grid.iArea(i + 1, j));
-			c = sqrt(gamma * V[3] / V[0]);
+			c = sqrt(cell_thermo[i][j].gamma * V[3] / V[0]); 
 
 			dt_old = CFL / (fabs(V[1] / dx) + fabs(V[2] / dy) + c * sqrt(1 / (dx * dx) + 1 / (dy * dy))); 
 
@@ -332,10 +424,11 @@ void Solver::solve_inviscid () {
 
 	while (outer_residual >= 1e-6) { 
 
+		
+		get_chemistry(); 
 		compute_dt();
-
+		
 		solve_inviscid_timestep();
-
 		compute_outer_residual();
 	
 		if (counter == 0) outer_residual = 1.0;		
