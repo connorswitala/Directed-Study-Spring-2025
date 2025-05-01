@@ -26,7 +26,7 @@ int main() {
 	inlet_conditions INLET; 
 
 	INLET.p = 75.9448,						// Inlet Pressure (SET)
-	INLET.T = 370.65,						// Inlet Temperature (SET)
+	INLET.T = 270.65,						// Inlet Temperature (SET)
 	INLET.M = 10,							// Inlet Mach speed (SET)
 	INLET.a = sqrt(perfGamma * perfR * INLET.T),	// Inlet Sound Speed
 	INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
