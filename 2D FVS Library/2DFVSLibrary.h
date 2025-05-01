@@ -19,25 +19,30 @@ using namespace std;
 
 constexpr double Ru = 8314; 
 constexpr double Pr = 0.71;
+constexpr double perfGamma = 1.4;
+constexpr double perfR = 287.0; 
 
-// Inline function that computes pressure from state vector
+struct ThermoEntry {
+	double rho, e, p, T, R, cv, gamma, dpdrho, dpde;
+};
+
 inline double computePressure(const Vector& U, double& gamma) { 
 	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
 }
-// Inline function that compuites Temperature from state vector
+
 inline double computeTemperature(const Vector& U, ThermoEntry& Thermo) { 
 	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (Thermo.gamma - 1) / Thermo.R; 
 }
 
 inline double computeInternalEnergy(const Vector& U) {
-	return (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2])) / U[0];
+	return U[3] / U[0] - 0.5 * ( (U[1] / U[0]) * (U[1] / U[0]) + (U[2] / U[0]) * (U[2] / U[0]) );
 }
 
 inline double computeSoundSpeed(const Vector& U, ThermoEntry& Thermo) {
-	double p = computePressure(U, Thermo.gamma); 
-	return sqrt(p / (U[0] * U[0]) * Thermo.dpde + Thermo.dpdrho); 
+	
+	return sqrt(Thermo.gamma * Thermo.R * Thermo.T);   
 }
-// This enum class is for setting boundary conditions types
+
 enum class BoundaryCondition {
 	IsothermalWall,
 	AdiabaticWall, 
@@ -47,7 +52,6 @@ enum class BoundaryCondition {
 	Undefined
 };
 
-// This struct contains the boundary conditions types for each side of the grid (left, right, bottom, top) 
 struct BoundaryConditions {
 
 	BoundaryCondition left;
@@ -66,60 +70,35 @@ struct inlet_conditions {
 
 // This struct contains the states for inviscid Jacobian computation
 struct Inviscid_State {
-	double rho, u, v, p, a, k, uprime, pp, h0;
-};
-
-// This struct contains the states for viscous Jacobians computation
-struct Viscous_State { 
-	double rho, u, v, p, a, k, uprime, pp, h0, T; 
+	double rho, u, v, p, a, k, uprime, pp, pe, h0; 
 };
 
 // This function computes the states for the inviscid Jacobians
-inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
+inline Inviscid_State compute_inviscid_state(const Vector& U, ThermoEntry& thermo, double nx, double ny) { 
 	Inviscid_State S;
+
 	S.rho = U[0];
 	S.u = U[1] / S.rho; 
 	S.v = U[2] / S.rho;  
-	S.p = computePressure(U); 
-	S.a = sqrt(gamma * S.p / S.rho); 
+	S.p = thermo.p; 
+	S.a = computeSoundSpeed(U, thermo); 
 	S.k = 1 / (S.a * S.a); 
 	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
+	S.pp = thermo.dpdrho; 
+	S.pe = thermo.dpde;   
+	S.h0 = U[3] / U[0];  
 	return S; 
 }
-
 
 // This set boundary conditions based on text from the UI
 inline BoundaryCondition getBoundaryCondition(const string& input);
 
-// This function computes the states for the viscous Jacobians
-inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
-	Viscous_State S;
+vector<vector<ThermoEntry>> load_csv(const string& filename);  
+int find_index(double target_rho, double target_e);
+ThermoEntry bilinear_interpolate(const vector<vector<ThermoEntry>>& table, double rho, double e);  
 
-	S.rho = U[0];
-	S.u = U[1] / S.rho;
-	S.v = U[2] / S.rho;
-	S.p = computePressure(U);
-	S.T = S.p / (S.rho * R);
-	S.a = sqrt(gamma * S.p / S.rho);
-	S.k = 1 / (S.a * S.a);
-	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
-	return S;
-}
-
-struct ThermoEntry {
-	double rho, e, p, T, R, cv, gamma, dpdrho, dpde;
-};
-
-vector<ThermoEntry> load_csv(const string& filename);
-int find_index(double target, double min, double max, int n);
-ThermoEntry bilinear_interpolate(const std::vector<ThermoEntry>& table, double rho, double e); 
-
-Vector primtoCons(const Vector& V, double& gamma); 
-Vector constoPrim(const Vector& U, double& gamma); 
+Vector primtoCons(const Vector& V, double gamma); 
+Vector constoPrim(const Vector& U, double gamma); 
 
 class Solver { 
 
@@ -131,8 +110,8 @@ private:
 	double CFL, Tw, dt, inner_residual, t_tot;  
 
 	Vector V_inlet, U_inlet, Global_Residual, t, iteration; 
-	vector<ThermoEntry> chem_lookup_table;    
-	vector<vector<ThermoEntry>> cell_thermo; 
+	vector<vector<ThermoEntry>> chem_lookup_table;     
+	vector<vector<ThermoEntry>> cell_thermo;  
 	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
 	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
 
@@ -147,41 +126,31 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector constoViscPrim(const Vector& U, ThermoEntry& Thermo); 	  
 
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
 	Vector inviscid_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
 
-	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
-	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
 
 	void get_chemistry();
+	void get_ghost_cells(); 
+	void compute_dt();
 
 	void solve_inviscid();  
-	void solve_viscous();  
 	void solve_inviscid_timestep(); 
-	void solve_viscous_timestep(); 
-	void compute_dt(); 
-	void compute_inviscid_jacobians(); 
-	void compute_viscous_jacobians(); 
 
+	
+	void compute_inviscid_jacobians(); 
 	void solve_left_line_inviscid();
 	void solve_middle_line_inviscid(const int i);
 	void solve_right_line_inviscid(); 
 
-	void solve_left_line_viscous();
-	void solve_middle_line_viscous(const int i); 
-	void solve_right_line_viscous(); 
-
-
 	void compute_inner_residual();
 	void compute_outer_residual(); 
-
-	void viscous_calculations();  
 
 	void write_2d_csv(const string& filename);
 	void write_1d_csv(const string& filename);
 	void write_residual_csv(); 
+
 	
 	void time(void (Solver::* func)()) { 
 		auto start = TIME;
@@ -192,15 +161,42 @@ public:
 		DURATION duration = end - start;
 		cout << "Time taken: " << duration.count() << endl;
 	}
-
 	Vector minmod(Vector& Ui, Vector& Uii);
 
+	//Vector constoViscPrim(const Vector& U, ThermoEntry& Thermo);
+	//Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
+	//Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
+	//void viscous_calculations();
+	//void solve_viscous(); 
+	//void solve_viscous_timestep(); 
+	//void compute_viscous_jacobians(); 
 
+	//void solve_left_line_viscous();
+	//void solve_middle_line_viscous(const int i);
+	//void solve_right_line_viscous();
 };
 
-
-
-
-
-
- 
+//
+//
+//struct Viscous_State {
+//	double rho, u, v, p, a, k, uprime, pp, h0, T;
+//};
+//inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) {
+//	Viscous_State S;
+//
+//	S.rho = U[0];
+//	S.u = U[1] / S.rho;
+//	S.v = U[2] / S.rho;
+//	S.p = computePressure(U);
+//	S.T = S.p / (S.rho * R);
+//	S.a = sqrt(gamma * S.p / S.rho);
+//	S.k = 1 / (S.a * S.a);
+//	S.uprime = S.u * nx + S.v * ny;
+//	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
+//	S.h0 = (U[3] + S.p) / S.rho;
+//	return S;
+//}
+//
+//
+//
+// 
