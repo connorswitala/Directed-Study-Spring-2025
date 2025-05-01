@@ -72,14 +72,14 @@ int find_index(double target, double min, double max, int n) {
 }
 ThermoEntry bilinear_interpolate(const std::vector<vector<ThermoEntry>>& table, double rho, double e) {
 
-	int n_rho = 200, n_e = 200;
+	int n_rho = 400, n_e = 400;
 	double rho_min = 1e-4, rho_max = 10.0, e_min = 3e5, e_max = 2e7;
 
 	int i = find_index(rho, rho_min, rho_max, n_rho);
 	int j = find_index(e, e_min, e_max, n_e);
 
-	double drho = (rho_max - rho_min) / (n_rho);
-	double de = (e_max - e_min) / (n_e);
+	double drho = (rho_max - rho_min) / (n_rho - 1); 
+	double de = (e_max - e_min) / (n_e - 1); 
 
 	double rho_i = rho_min + i * drho;
 	double e_j = e_min + j * de;
