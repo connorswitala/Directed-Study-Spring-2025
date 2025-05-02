@@ -12,6 +12,9 @@ void printMemoryUsage() {
 }
 
 
+
+
+
 // Creates an identity matrix of given size
 Matrix identity(int a) { 
     Matrix I(a, Vector(a, 0.0)); 
