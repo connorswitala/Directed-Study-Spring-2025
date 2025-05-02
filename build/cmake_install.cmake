@@ -38,6 +38,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("C:/Users/Connor/source/repos/Directed Study Spring 2025/build/GridGenerator/cmake_install.cmake")
   include("C:/Users/Connor/source/repos/Directed Study Spring 2025/build/2D FVS Library/cmake_install.cmake")
   include("C:/Users/Connor/source/repos/Directed Study Spring 2025/build/DPLR Finite Volume/cmake_install.cmake")
+  include("C:/Users/Connor/source/repos/Directed Study Spring 2025/build/Chemical Equilibrium/cmake_install.cmake")
 
 endif()
 
