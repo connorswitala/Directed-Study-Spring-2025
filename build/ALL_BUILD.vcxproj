@@ -178,10 +178,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{8B440142-B9B5-3FC5-8469-1D2EC882B9EA}</Project>
       <Name>2DFVSLibrary</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\Chemical Equilibrium\ChemicalEquilibriumSolver.vcxproj">
-      <Project>{6653CE32-E019-3454-9064-60C0D64922F3}</Project>
-      <Name>ChemicalEquilibriumSolver</Name>
-    </ProjectReference>
     <ProjectReference Include="C:\Users\Connor\source\repos\Directed Study Spring 2025\build\DPLR Finite Volume\DPLRFiniteVolume.vcxproj">
       <Project>{E46DDAE8-FFDD-3A02-A3D7-59162B3D8E3A}</Project>
       <Name>DPLRFiniteVolume</Name>

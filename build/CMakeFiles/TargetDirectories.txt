@@ -8,5 +8,3 @@ C:/Users/Connor/source/repos/Directed Study Spring 2025/build/2D FVS Library/CMa
 C:/Users/Connor/source/repos/Directed Study Spring 2025/build/2D FVS Library/CMakeFiles/ALL_BUILD.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/build/DPLR Finite Volume/CMakeFiles/DPLRFiniteVolume.dir
 C:/Users/Connor/source/repos/Directed Study Spring 2025/build/DPLR Finite Volume/CMakeFiles/ALL_BUILD.dir
-C:/Users/Connor/source/repos/Directed Study Spring 2025/build/Chemical Equilibrium/CMakeFiles/ChemicalEquilibriumSolver.dir
-C:/Users/Connor/source/repos/Directed Study Spring 2025/build/Chemical Equilibrium/CMakeFiles/ALL_BUILD.dir

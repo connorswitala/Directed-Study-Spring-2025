@@ -5,8 +5,7 @@
 		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/Linear Algebra Library/cmake_install.cmake",
 		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/GridGenerator/cmake_install.cmake",
 		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/2D FVS Library/cmake_install.cmake",
-		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/DPLR Finite Volume/cmake_install.cmake",
-		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/Chemical Equilibrium/cmake_install.cmake"
+		"C:/Users/Connor/source/repos/Directed Study Spring 2025/build/DPLR Finite Volume/cmake_install.cmake"
 	],
 	"Parallel" : false
 }
