@@ -16,7 +16,6 @@ Vector primtoCons(const Vector& V) {
 
 	return U;
 }
-
 Vector constoPrim(const Vector& U) {
 
 	static Vector V(4);
@@ -349,7 +348,7 @@ void Solver::solve_inviscid () {
 		}
 
 		if (counter % 1000 == 0) { 
-			write_2d_csv(filename); 
+			write_2d_csv(filename, INLET);  
 		}
 
 		t_tot += dt;
@@ -359,7 +358,7 @@ void Solver::solve_inviscid () {
 
 	}
 
-	write_2d_csv(filename);  
+	write_2d_csv(filename, INLET);   
 	write_residual_csv();  
 
 	auto end = TIME;
@@ -403,7 +402,7 @@ void Solver::solve_viscous() {
 		}
 
 		if (counter % 1000 == 0) {
-			write_2d_csv(filename);
+			write_2d_csv(filename, INLET); 
 		}
 
 		t_tot += dt;
@@ -413,7 +412,7 @@ void Solver::solve_viscous() {
 
 	}
 
-	write_2d_csv(filename); 
+	write_2d_csv(filename, INLET);  
 	write_1d_csv("1D VISCOUS.csv");     
 	write_residual_csv(); 
 	viscous_calculations();
@@ -488,7 +487,7 @@ void Solver::compute_inviscid_jacobians() {
 	Inviscid_State Si, Sii; 
 	double g = 5.72;
 	double weight, dp, pi, pii, pe, nx, ny, l, lc, lt;
-	pe = (gamma - 1);  
+	pe = (gamma - 1.0);  
 	Matrix X(4, Vector(4)), Y(4, Vector(4)); 
 
 	// Calculate Jacobians and Explicit fluxes for i-faces on left boundary 
@@ -503,7 +502,7 @@ void Solver::compute_inviscid_jacobians() {
 		pi = computePressure(Ui);
 		pii = computePressure(Uii);
 		dp = fabs(pii - pi) / min(pii, pi);
-		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1));
+		weight = 1 - 0.5 * (1 / ((g * dp) * (g * dp) + 1)); 
 
 		Up = weight * Ui + (1 - weight) * Uii;
 		Um = (1 - weight) * Ui + weight * Uii;
@@ -2230,7 +2229,7 @@ void Solver::write_residual_csv() {
 
 }
 
-void Solver::write_2d_csv(const string& filename) {
+void Solver::write_2d_csv(const string& filename, inlet_conditions& INLET) {  
 
 	double a, density, pressure, u_velocity, v_velocity, Mach, Temperature;
 
@@ -2252,7 +2251,9 @@ void Solver::write_2d_csv(const string& filename) {
 			Mach = sqrt(u_velocity * u_velocity + v_velocity * v_velocity) / a;
 			Temperature = pressure / (density * R);
 
-			file << density << ", " << u_velocity << ", " << v_velocity << ", " << pressure << ", " << Mach << ", " << Temperature<< ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
+
+
+			file << density/INLET.rho << ", " << u_velocity/INLET.u << ", " << v_velocity << ", " << pressure/INLET.p << ", " << Mach/INLET.M << ", " << Temperature/INLET.T << ", " << grid.Center(i, j).x << ", " << grid.Center(i, j).y << ", 0.0" << endl;
 
 		}
 	}

@@ -15,20 +15,23 @@ using namespace std;
 
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
-constexpr double R = 287;
-constexpr double Ru = 8314; 
+constexpr double R = 287.0;
+constexpr double Ru = 8314.0; 
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
-// Inline function that computes pressure from state vector
-inline double computePressure(const Vector& U) {
-	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
-}
 
-// Inline function that compuites Temperature from state vector
+inline double computeInternalEnergy(const Vector& U) {
+	return U[3] / U[0] - 1.0 / (2.0 * U[0] * U[0]) * (U[1] * U[1] + U[2] * U[2]);
+} 
+inline double computePressure(const Vector& U) {
+	double e = computeInternalEnergy(U); 
+	return (gamma - 1.0) * U[0] * e;  
+}
 inline double computeTemperature(const Vector& U) {
-	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
+	double e = computeInternalEnergy(U); 
+	return e / cv;  
 }
 
 
@@ -82,21 +85,25 @@ struct Viscous_State {
 // This function computes the states for the inviscid Jacobians
 inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
 	Inviscid_State S;
+	double e = computeInternalEnergy(U); 
+
 	S.rho = U[0];
 	S.u = U[1] / S.rho; 
 	S.v = U[2] / S.rho;  
 	S.p = computePressure(U); 
 	S.a = sqrt(gamma * S.p / S.rho); 
-	S.k = 1 / (S.a * S.a); 
+	S.k = 1.0 / (S.a * S.a); 
 	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
+	S.pp = (gamma - 1.0) * e;  
+	S.h0 = U[3] / S.rho;  
+
 	return S; 
 }
 
 // This function computes the states for the viscous Jacobians
 inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
 	Viscous_State S;
+	double e = computeInternalEnergy(U);
 
 	S.rho = U[0];
 	S.u = U[1] / S.rho;
@@ -104,10 +111,10 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 	S.p = computePressure(U);
 	S.T = S.p / (S.rho * R);
 	S.a = sqrt(gamma * S.p / S.rho);
-	S.k = 1 / (S.a * S.a);
-	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
+	S.k = 1.0 / (S.a * S.a);
+	S.uprime = S.u * nx + S.v * ny; 
+	S.pp = (gamma - 1.0) * e; 
+	S.h0 = U[3] / S.rho;
 	return S;
 }
 
@@ -170,7 +177,7 @@ public:
 
 	void viscous_calculations();  
 
-	void write_2d_csv(const string& filename);
+	void write_2d_csv(const string& filename, inlet_conditions& INLET); 
 	void write_1d_csv(const string& filename);
 	void write_residual_csv(); 
 	
