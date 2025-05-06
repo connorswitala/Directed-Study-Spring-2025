@@ -20,7 +20,7 @@ int main() {
     int i = Nx - 1, j = Ny - 1;
 
 
-	cout << grid.jNorms(i, j).x << " " << grid.jNorms(i, j).y << endl;  
+	cout << grid.iNorms(i, j).x << " " << grid.iNorms(i, j).y << endl;  
 
 
     return 0;

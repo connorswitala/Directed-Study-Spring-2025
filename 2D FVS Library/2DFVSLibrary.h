@@ -74,7 +74,7 @@ struct inlet_conditions {
 
 // This struct contains the states for inviscid Jacobian computation
 struct Inviscid_State {
-	double rho, u, v, p, a, k, uprime, pp, h0;
+	double rho, u, v, p, a, k, uprime, pp, h0; 
 };
 
 // This struct contains the states for viscous Jacobians computation

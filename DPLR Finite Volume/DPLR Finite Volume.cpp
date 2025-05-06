@@ -130,10 +130,10 @@ int main() {
 		CFL = 1.0; 
 		const int Nx = 100, Ny = 50; 
 
-		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);     
+		BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);      
 		RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);   
 
-		//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Inlet);         
+		//BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);           
 		//CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.001, pi / 2, 3 * pi / 2); 
 
 		//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);   
