@@ -113,7 +113,7 @@ int main() {
 		 
 		// Calls solver type ( use -> solver.solve_viscous() if you want viscous solver)
 		if (solver_type == "inviscid") solver.solve_inviscid();
-		else solver.solve_viscous(); 
+		/*else solver.solve_viscous(); */
 	}
 
 	else if (preset == "preset") {

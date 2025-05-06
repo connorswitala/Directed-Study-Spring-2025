@@ -21,6 +21,9 @@ constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
+Point operator*(int s, const Point& normals); 
+
+
 
 inline double computeInternalEnergy(const Vector& U) {
 	return U[3] / U[0] - 1.0 / (2.0 * U[0] * U[0]) * (U[1] * U[1] + U[2] * U[2]);
@@ -133,8 +136,8 @@ private:
 
 	Vector V_inlet, U_inlet, Global_Residual, t, iteration; 
 
-	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
-	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
+	Tensor U, dU_new, dU_old, left_flux, right_flux, bot_flux, top_flux;
+	Tesseract top_plus_jac, top_minus_jac, bottom_plus_jac, bottom_minus_jac, left_plus_jac, left_minus_jac, right_plus_jac, right_minus_jac; 
 
 	Grid& grid;    
 	BoundaryConditions BoundaryType;  
@@ -147,36 +150,22 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector constoViscPrim(const Vector& U); 
-
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
 	Vector inviscid_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
 
-	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
-	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
-
+	void get_ghost_cells();  
 	void solve_inviscid();  
-	void solve_viscous();  
 	void solve_inviscid_timestep(); 
-	void solve_viscous_timestep(); 
 	void compute_dt(); 
-	void compute_inviscid_jacobians(); 
-	void compute_viscous_jacobians(); 
+	void compute_inviscid_jacobians();
 
 	void solve_left_line_inviscid();
 	void solve_middle_line_inviscid(const int i);
 	void solve_right_line_inviscid(); 
 
-	void solve_left_line_viscous();
-	void solve_middle_line_viscous(const int i); 
-	void solve_right_line_viscous(); 
-
 
 	void compute_inner_residual();
 	void compute_outer_residual(); 
-
-	void viscous_calculations();  
-
 	void write_2d_csv(const string& filename, inlet_conditions& INLET); 
 	void write_1d_csv(const string& filename);
 	void write_residual_csv(); 
@@ -193,6 +182,16 @@ public:
 
 	Vector minmod(Vector& Ui, Vector& Uii);
 
+	//Vector constoViscPrim(const Vector& U);
+	//Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
+	//Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
+	//void solve_viscous();
+	//void solve_viscous_timestep();
+	//void compute_viscous_jacobians();
+	//void solve_left_line_viscous();
+	//void solve_middle_line_viscous(const int i);
+	//void solve_right_line_viscous();
+	//void viscous_calculations();
 
 };
 
