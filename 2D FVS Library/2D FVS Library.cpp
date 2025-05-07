@@ -297,7 +297,7 @@ void Solver::solve_inviscid_timestep() {
 
 void Solver::get_ghost_cells() {
 	for (int j = 0; j < Ny; ++j) { 
-		U[0][j + 1] = inviscid_boundary_2D_U(BoundaryType.left, U[1][j + 1], -1 * grid.iNorms(0, j)); 
+		U[0][j + 1] = inviscid_boundary_2D_U(BoundaryType.left, U[1][j + 1], -1 * grid.iNorms(0, j));  
 		U[Nx + 1][j + 1] = inviscid_boundary_2D_U(BoundaryType.right, U[Nx][j + 1], grid.iNorms(Nx, j));   
 	}
 	for (int i = 0; i < Nx; ++i) { 
@@ -327,7 +327,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1;
+			weight = 1 - 1/(2 * (g * g * dp * dp + 1));
 
 			Up = weight * Ui + (1 - weight) * Uii; 
 			Um = (1 - weight) * Ui + weight * Uii; 
@@ -369,7 +369,7 @@ void Solver::compute_inviscid_jacobians() {
 			Ap = dudv * M * dvdu;
 
 			l1 = 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a));
-			l2 = 0.5 * (Sii.uprime - Sii.uprime); 
+			l2 = 0.5 * (Sii.uprime - fabs(Sii.uprime)); 
 			l3 = l2;
 			l4 = 0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a));
 
@@ -415,7 +415,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1;
+			weight = 1 - 1 / (2 * (g * g * dp * dp + 1));
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
@@ -502,7 +502,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1;
+			weight = 1 - 1 / (2 * (g * g * dp * dp + 1));
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
@@ -589,7 +589,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1;
+			weight = 1 - 1 / (2 * (g * g * dp * dp + 1)); 
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
