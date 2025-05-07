@@ -15,20 +15,26 @@ using namespace std;
 
 // Global constants for fluid dynamics
 constexpr double gamma = 1.4;
-constexpr double R = 287;
-constexpr double Ru = 8314; 
+constexpr double R = 287.0;
+constexpr double Ru = 8314.0; 
 constexpr double cv = R / (gamma - 1);
 constexpr double cp = cv + R;
 constexpr double Pr = 0.71;
 
-// Inline function that computes pressure from state vector
-inline double computePressure(const Vector& U) {
-	return (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]));
-}
+Point operator*(int s, const Point& normals); 
 
-// Inline function that compuites Temperature from state vector
+
+
+inline double computeInternalEnergy(const Vector& U) {
+	return U[3] / U[0] - 1.0 / (2.0 * U[0] * U[0]) * (U[1] * U[1] + U[2] * U[2]);
+} 
+inline double computePressure(const Vector& U) {
+	double e = computeInternalEnergy(U); 
+	return (gamma - 1.0) * U[0] * e;  
+}
 inline double computeTemperature(const Vector& U) {
-	return (U[3] / U[0] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / (U[0] * U[0])) * (gamma - 1) / R;
+	double e = computeInternalEnergy(U); 
+	return e / cv;  
 }
 
 
@@ -71,7 +77,7 @@ struct inlet_conditions {
 
 // This struct contains the states for inviscid Jacobian computation
 struct Inviscid_State {
-	double rho, u, v, p, a, k, uprime, pp, h0;
+	double rho, u, v, a, p, uprime;  
 };
 
 // This struct contains the states for viscous Jacobians computation
@@ -82,21 +88,21 @@ struct Viscous_State {
 // This function computes the states for the inviscid Jacobians
 inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
 	Inviscid_State S;
+
 	S.rho = U[0];
-	S.u = U[1] / S.rho; 
-	S.v = U[2] / S.rho;  
-	S.p = computePressure(U); 
-	S.a = sqrt(gamma * S.p / S.rho); 
-	S.k = 1 / (S.a * S.a); 
+	S.u = U[1] / U[0]; 
+	S.v = U[2] / U[0];  
+	S.p = computePressure(U);
+	S.a = sqrt(gamma * S.p / U[0]); 
 	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
+
 	return S; 
 }
 
 // This function computes the states for the viscous Jacobians
 inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny) { 
 	Viscous_State S;
+	double e = computeInternalEnergy(U);
 
 	S.rho = U[0];
 	S.u = U[1] / S.rho;
@@ -104,10 +110,10 @@ inline Viscous_State compute_viscous_state(const Vector& U, double nx, double ny
 	S.p = computePressure(U);
 	S.T = S.p / (S.rho * R);
 	S.a = sqrt(gamma * S.p / S.rho);
-	S.k = 1 / (S.a * S.a);
-	S.uprime = S.u * nx + S.v * ny;
-	S.pp = 0.5 * (gamma - 1) * (S.u * S.u + S.v * S.v);
-	S.h0 = (U[3] + S.p) / S.rho;
+	S.k = 1.0 / (S.a * S.a);
+	S.uprime = S.u * nx + S.v * ny; 
+	S.pp = (gamma - 1.0) * e; 
+	S.h0 = U[3] / S.rho;
 	return S;
 }
 
@@ -126,8 +132,8 @@ private:
 
 	Vector V_inlet, U_inlet, Global_Residual, t, iteration; 
 
-	Tensor U, dU_new, dU_old, i_Fluxes, j_Fluxes; 
-	Tesseract i_plus_inviscid_Jacobians, i_minus_inviscid_Jacobians, i_viscous_Jacobians, j_plus_inviscid_Jacobians, j_minus_inviscid_Jacobians, j_viscous_Jacobians; 
+	Tensor U, dU_new, dU_old, left_flux, right_flux, bot_flux, top_flux;
+	Tesseract top_plus_jac, top_minus_jac, bottom_plus_jac, bottom_minus_jac, left_plus_jac, left_minus_jac, right_plus_jac, right_minus_jac; 
 
 	Grid& grid;    
 	BoundaryConditions BoundaryType;  
@@ -140,37 +146,23 @@ public:
 
 	Solver(const int Nx, const int Ny, const inlet_conditions& INLET, Grid& grid, BoundaryConditions BoundaryType, double CFL, double Tw, int& progress_update);  
 
-	Vector constoViscPrim(const Vector& U); 
-
 	Matrix inviscid_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
 	Vector inviscid_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
 
-	Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);    
-	Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);   
-
+	void get_ghost_cells();  
 	void solve_inviscid();  
-	void solve_viscous();  
 	void solve_inviscid_timestep(); 
-	void solve_viscous_timestep(); 
 	void compute_dt(); 
-	void compute_inviscid_jacobians(); 
-	void compute_viscous_jacobians(); 
+	void compute_inviscid_jacobians();
 
 	void solve_left_line_inviscid();
 	void solve_middle_line_inviscid(const int i);
 	void solve_right_line_inviscid(); 
 
-	void solve_left_line_viscous();
-	void solve_middle_line_viscous(const int i); 
-	void solve_right_line_viscous(); 
-
 
 	void compute_inner_residual();
 	void compute_outer_residual(); 
-
-	void viscous_calculations();  
-
-	void write_2d_csv(const string& filename);
+	void write_2d_csv(const string& filename); 
 	void write_1d_csv(const string& filename);
 	void write_residual_csv(); 
 	
@@ -186,6 +178,16 @@ public:
 
 	Vector minmod(Vector& Ui, Vector& Uii);
 
+	//Vector constoViscPrim(const Vector& U);
+	//Matrix viscous_boundary_2D_E(BoundaryCondition type, const Vector& U, const Point& normals);
+	//Vector viscous_boundary_2D_U(BoundaryCondition type, const Vector& U, const Point& normals);
+	//void solve_viscous();
+	//void solve_viscous_timestep();
+	//void compute_viscous_jacobians();
+	//void solve_left_line_viscous();
+	//void solve_middle_line_viscous(const int i);
+	//void solve_right_line_viscous();
+	//void viscous_calculations();
 
 };
 

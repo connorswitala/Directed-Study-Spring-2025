@@ -46,72 +46,80 @@ RampGrid::RampGrid(int Nx, int Ny, double L1, double L2, double L3, double inlet
 	}
 
 	// Define lengths 
-	double L_total = L1 + L2 + L3;
-	double dx = L_total / (Nx + 1);
+	double L_tot = L1 + L2 + L3;
+	double dx = L_tot / (Nx + 1);
 	double dy = inlet_height / (Ny + 1);
 	double L, dy_ramp;
 
-	// Create x vertices
-	for (i = 0; i <= Nx; ++i) {
-		for (j = 0; j <= Ny; ++j) {
+	// 1. Fill in x values
+	for (int i = 0; i <= Nx; ++i) {
+		for (int j = 0; j <= Ny; ++j) {
 			vertices[i][j].x = i * dx;
 		}
 	}
 
-	// Snap x-vertices to important boundary points.
-	for (i = 0; i <= Nx; ++i) {
-		for (j = 0; j <= Ny; ++j) {
-			if (vertices[i][j].x > L1 && vertices[i][j].x < L1 + dx) {
+	// 2. Snap x values to exact boundary locations
+	for (int i = 1; i <= Nx; ++i) {
+		double xval = vertices[i][0].x;
+
+		if (xval > L1 && xval < L1 + dx) {
+			for (int j = 0; j <= Ny; ++j)
 				vertices[i][j].x = L1;
-			}
-			else if (vertices[i][j].x > L1 + L2 && vertices[i][j].x < L1 + L2 + dx) {
+		}
+		else if (xval > L1 + L2 && xval < L1 + L2 + dx) {
+			for (int j = 0; j <= Ny; ++j)
 				vertices[i][j].x = L1 + L2;
-			}
-			else if (i == Nx) {
-				vertices[i][j].x = L_total;
-			}
+		}
+		else if (i == Nx) {
+			for (int j = 0; j <= Ny; ++j)
+				vertices[i][j].x = L_tot;
 		}
 	}
 
+	// 3. Generate y values
+	for (int i = 0; i <= Nx; ++i) {
+		double L = vertices[i][0].x;
 
-	// Create grid.
-	for (i = 0; i <= Nx; ++i) {
-		L = vertices[i][0].x;
-
-		// y vertices for section 1
 		if (L <= L1) {
-			dy = inlet_height / (Ny + 1);
-			for (j = 0; j <= Ny; ++j) {
+			// First segment: flat
+			double dy = inlet_height / Ny;
+			for (int j = 0; j <= Ny; ++j) {
 				vertices[i][j].y = j * dy;
 			}
 		}
-
-		// y vertices for section 2
-		else if ((L > L1) && (L <= (L1 + L2))) {
-
-			// Changes dy based on section
-			if (L >= L1 && L < L1 + L2 + dx)  dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
-
-			if (L == L1 + L2) dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads); 
+		else if (L > L1 && L <= L1 + L2) {
+			// Second segment: ramp
+			double dy_ramp;
+			if (vertices[i - 1][0].x == L1) {
+				dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
+			}
+			else if ((L + dx > L1 + L2) && (L < L1 + L2 + dx)) {
+				dy_ramp = (vertices[i][0].x - vertices[i - 1][0].x) * tan(ang_rads);
+			}
+			else {
+				dy_ramp = dx * tan(ang_rads);
+			}
 
 			vertices[i][0].y = vertices[i - 1][0].y + dy_ramp;
-			dy = (inlet_height - vertices[i][0].y) / (Ny + 1);
+			double dy = (inlet_height - vertices[i][0].y) / Ny;
 
-			for (j = 1; j <= Ny; ++j) {
-				vertices[i][j].y = vertices[i][0].y + j * dy;
+			for (int j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = vertices[i][0].y + j * dy; 
 			}
+
 		}
-
-		// y vertives for section 3
 		else {
-			vertices[i][0].y = L2 * tan(ang_rads);
-			dy = (inlet_height - L2 * tan(ang_rads)) / (Ny + 1); 
+			// Third segment: flat after ramp
+			double y_base = L2 * tan(ang_rads); 
+			vertices[i][0].y = y_base; 
+			double dy = (inlet_height - y_base) / Ny; 
 
-			for (j = 1; j <= Ny; ++j) {
-				vertices[i][j].y = L2 * tan(ang_rads) + j * dy;
+			for (int j = 1; j <= Ny; ++j) {
+				vertices[i][j].y = y_base + j * dy;
 			}
 		}
 	}
+
 
 	// Edge vectors
 	Point AB, BC, CD, DA;  
