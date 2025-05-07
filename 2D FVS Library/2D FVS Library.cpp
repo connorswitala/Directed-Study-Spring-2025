@@ -73,12 +73,16 @@ left_flux(left_flux), right_flux(right_flux), bot_flux(bot_flux), top_flux(top_f
 
 
 	U_inlet = primtoCons(V_inlet); 
-
+	
 	for (int i = 0; i < Nx + 2; ++i) {
 		for (int j = 0; j < Ny + 2; ++j) {
 			U[i][j] = U_inlet;  
 		}
 	}
+
+	string filename = "Inviscid " + to_string(Nx) + "x" + to_string(Ny) + "_" + gridtype + "_Solution.csv"; 
+	write_2d_csv(filename); 
+	cout << "BOGOS BINTED" << endl; 
 
 };   
 
@@ -240,7 +244,7 @@ void Solver::solve_inviscid () {
 		}
 
 		if (counter % 1000 == 0) { 
-			write_2d_csv(filename, INLET);  
+			write_2d_csv(filename);  
 		}
 
 		t_tot += dt;
@@ -250,7 +254,7 @@ void Solver::solve_inviscid () {
 
 	}
 
-	write_2d_csv(filename, INLET);   
+	write_2d_csv(filename);   
 	write_residual_csv();  
 
 	auto end = TIME;
@@ -262,23 +266,21 @@ void Solver::solve_inviscid () {
 void Solver::solve_inviscid_timestep() {
 
 	inner_residual = 1.0; 
-
+	get_ghost_cells();
+	 
 	while (inner_residual >= 1e-8) {	
-
-		get_ghost_cells();  
-
+		
+		get_ghost_cells();
 		compute_inviscid_jacobians(); 
 
 		solve_left_line_inviscid();
-
 		for (int i = 1; i < Nx - 1; ++i) { 
 			solve_middle_line_inviscid(i);
 		}
-
 		solve_right_line_inviscid();
 
 		compute_inner_residual();
-		cout << inner_residual << endl; 
+
 		swap(dU_old, dU_new); 
 	}
 
@@ -303,7 +305,6 @@ void Solver::get_ghost_cells() {
 		U[i + 1][Ny + 1] = inviscid_boundary_2D_U(BoundaryType.top, U[i + 1][Ny], grid.jNorms(i, Ny)); 
 	}
 }
-
 void Solver::compute_inviscid_jacobians() {
 
 	static Vector Ui(4), Uii(4), Up(4), Um(4); 
@@ -334,7 +335,7 @@ void Solver::compute_inviscid_jacobians() {
 			Sii = compute_inviscid_state(Um, nx, ny);
 
 			l1 = 0.5 * (Si.uprime - Si.a + fabs(Si.uprime - Si.a));
-			l2 = 0.5 * (Si.uprime + fabs(Si.uprime));
+			l2 = 0.5 * (Si.uprime + fabs(Si.uprime)); 
 			l3 = l2;
 			l4 = 0.5 * (Si.uprime + Si.a + fabs(Si.uprime + Si.a));
 
@@ -343,7 +344,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Si.u, Si.rho, 0, 0},
 					{Si.v, 0, Si.rho, 0},
-					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, cv / R}
+					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, 1/(gamma-1)}
 				}
 			};
 
@@ -352,7 +353,7 @@ void Solver::compute_inviscid_jacobians() {
 				{1, 0, 0, 0},
 				{-Si.u / Si.rho, 1 / Si.rho, 0, 0},
 				{-Si.v / Si.rho, 0, 1 / Si.rho, 0},
-				{0.5 * R / cv * (Si.u * Si.u + Si.v * Si.v), -R / cv * Si.u, -R / cv * Si.v, R / cv}
+				{0.5 * (gamma - 1) * (Si.u * Si.u + Si.v * Si.v), -(gamma - 1) * Si.u, -(gamma - 1) * Si.v, gamma - 1}
 			}
 			};
 
@@ -368,7 +369,7 @@ void Solver::compute_inviscid_jacobians() {
 			Ap = dudv * M * dvdu;
 
 			l1 = 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a));
-			l2 = 0.5 * (Sii.uprime - Sii.a);
+			l2 = 0.5 * (Sii.uprime - Sii.uprime); 
 			l3 = l2;
 			l4 = 0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a));
 
@@ -377,7 +378,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Sii.u, Sii.rho, 0, 0},
 					{Sii.v, 0, Sii.rho, 0},
-					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, cv / R}
+					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -386,7 +387,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{-Sii.u / Sii.rho, 1 / Sii.rho, 0, 0},
 					{-Sii.v / Sii.rho, 0, 1 / Sii.rho, 0},
-					{0.5 * R / cv * (Sii.u * Sii.u + Sii.v * Sii.v), -R / cv * Sii.u, -R / cv * Sii.v, R / cv}
+					{0.5 * (gamma - 1) * (Sii.u * Sii.u + Sii.v * Sii.v), -(gamma - 1) * Sii.u, -(gamma - 1) * Sii.v, gamma - 1}
 				}
 			};
 
@@ -430,7 +431,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Si.u, Si.rho, 0, 0},
 					{Si.v, 0, Si.rho, 0},
-					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, cv / R}
+					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -439,7 +440,7 @@ void Solver::compute_inviscid_jacobians() {
 				{1, 0, 0, 0},
 				{-Si.u / Si.rho, 1 / Si.rho, 0, 0},
 				{-Si.v / Si.rho, 0, 1 / Si.rho, 0},
-				{0.5 * R / cv * (Si.u * Si.u + Si.v * Si.v), -R / cv * Si.u, -R / cv * Si.v, R / cv}
+				{0.5 * (gamma - 1) * (Si.u * Si.u + Si.v * Si.v), -(gamma - 1) * Si.u, -(gamma - 1) * Si.v, gamma - 1}
 			}
 			};
 
@@ -464,7 +465,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Sii.u, Sii.rho, 0, 0},
 					{Sii.v, 0, Sii.rho, 0},
-					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, cv / R}
+					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -473,7 +474,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{-Sii.u / Sii.rho, 1 / Sii.rho, 0, 0},
 					{-Sii.v / Sii.rho, 0, 1 / Sii.rho, 0},
-					{0.5 * R / cv * (Sii.u * Sii.u + Sii.v * Sii.v), -R / cv * Sii.u, -R / cv * Sii.v, R / cv}
+					{0.5 * (gamma - 1) * (Sii.u * Sii.u + Sii.v * Sii.v), -(gamma - 1) * Sii.u, -(gamma - 1) * Sii.v, gamma - 1}
 				}
 			};
 
@@ -492,7 +493,7 @@ void Solver::compute_inviscid_jacobians() {
 			right_minus_jac[i][j] = Am; 
 			right_flux[i][j] = Ap * Ui + Am * Uii;  
 
-			// Bottom Face
+			/////////// Bottom Face ///////////////////
 			Ui = U[i + 1][j + 1];  
 			Uii = U[i + 1][j]; 
 			nx = -grid.jNorms(i, j).x;
@@ -517,7 +518,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Si.u, Si.rho, 0, 0},
 					{Si.v, 0, Si.rho, 0},
-					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, cv / R}
+					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -526,7 +527,7 @@ void Solver::compute_inviscid_jacobians() {
 				{1, 0, 0, 0},
 				{-Si.u / Si.rho, 1 / Si.rho, 0, 0},
 				{-Si.v / Si.rho, 0, 1 / Si.rho, 0},
-				{0.5 * R / cv * (Si.u * Si.u + Si.v * Si.v), -R / cv * Si.u, -R / cv * Si.v, R / cv}
+				{0.5 * (gamma - 1) * (Si.u * Si.u + Si.v * Si.v), -(gamma - 1) * Si.u, -(gamma - 1) * Si.v, gamma - 1}
 			}
 			};
 
@@ -542,7 +543,7 @@ void Solver::compute_inviscid_jacobians() {
 			Ap = dudv * M * dvdu;
 
 			l1 = 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a));
-			l2 = 0.5 * (Sii.uprime - Sii.a);
+			l2 = 0.5 * (Sii.uprime - fabs(Sii.uprime)); 
 			l3 = l2;
 			l4 = 0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a));
 
@@ -551,7 +552,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Sii.u, Sii.rho, 0, 0},
 					{Sii.v, 0, Sii.rho, 0},
-					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, cv / R}
+					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -560,7 +561,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{-Sii.u / Sii.rho, 1 / Sii.rho, 0, 0},
 					{-Sii.v / Sii.rho, 0, 1 / Sii.rho, 0},
-					{0.5 * R / cv * (Sii.u * Sii.u + Sii.v * Sii.v), -R / cv * Sii.u, -R / cv * Sii.v, R / cv}
+					{0.5 * (gamma - 1) * (Sii.u * Sii.u + Sii.v * Sii.v), -(gamma - 1) * Sii.u, -(gamma - 1) * Sii.v, gamma - 1}
 				}
 			};
 
@@ -573,11 +574,13 @@ void Solver::compute_inviscid_jacobians() {
 				}
 			};
 
+			Am = dudv * M * dvdu;
+
 			bottom_plus_jac[i][j] = Ap; 
 			bottom_minus_jac[i][j] = Am; 
 			bot_flux[i][j] = Ap * Ui + Am * Uii; 
 
-			// Top Face
+			///////////// Top Face /////////////////////
 			Ui = U[i + 1][j + 1]; 
 			Uii = U[i + 1][j + 2]; 
 			nx = grid.jNorms(i, j + 1).x; 
@@ -602,7 +605,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Si.u, Si.rho, 0, 0},
 					{Si.v, 0, Si.rho, 0},
-					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, cv / R}
+					{0.5 * (Si.u * Si.u + Si.v * Si.v), Si.rho * Si.u, Si.rho * Si.v, 1 / (gamma - 1)}
 				}
 			};
 
@@ -611,7 +614,7 @@ void Solver::compute_inviscid_jacobians() {
 				{1, 0, 0, 0},
 				{-Si.u / Si.rho, 1 / Si.rho, 0, 0},
 				{-Si.v / Si.rho, 0, 1 / Si.rho, 0},
-				{0.5 * R / cv * (Si.u * Si.u + Si.v * Si.v), -R / cv * Si.u, -R / cv * Si.v, R / cv}
+				{0.5 * (gamma - 1) * (Si.u * Si.u + Si.v * Si.v), -(gamma - 1) * Si.u, -(gamma - 1) * Si.v, gamma - 1}
 			}
 			};
 
@@ -627,7 +630,7 @@ void Solver::compute_inviscid_jacobians() {
 			Ap = dudv * M * dvdu;
 
 			l1 = 0.5 * (Sii.uprime - Sii.a - fabs(Sii.uprime - Sii.a));
-			l2 = 0.5 * (Sii.uprime - Sii.a);
+			l2 = 0.5 * (Sii.uprime - fabs(Sii.uprime)); 
 			l3 = l2;
 			l4 = 0.5 * (Sii.uprime + Sii.a - fabs(Sii.uprime + Sii.a));
 
@@ -636,7 +639,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{Sii.u, Sii.rho, 0, 0},
 					{Sii.v, 0, Sii.rho, 0},
-					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, cv / R}
+					{0.5 * (Sii.u * Sii.u + Sii.v * Sii.v), Sii.rho * Sii.u, Sii.rho * Sii.v, 1/(gamma - 1)}
 				}
 			};
 
@@ -645,7 +648,7 @@ void Solver::compute_inviscid_jacobians() {
 					{1, 0, 0, 0},
 					{-Sii.u / Sii.rho, 1 / Sii.rho, 0, 0},
 					{-Sii.v / Sii.rho, 0, 1 / Sii.rho, 0},
-					{0.5 * R / cv * (Sii.u * Sii.u + Sii.v * Sii.v), -R / cv * Sii.u, -R / cv * Sii.v, R / cv}
+					{0.5 * (gamma - 1) * (Sii.u * Sii.u + Sii.v * Sii.v), -(gamma - 1) * Sii.u, -(gamma - 1) * Sii.v, gamma - 1} 
 				}
 			};
 
@@ -658,13 +661,14 @@ void Solver::compute_inviscid_jacobians() {
 				}
 			};
 
+			Am = dudv * M * dvdu; 
+
 			top_plus_jac[i][j] = Ap; 
 			top_minus_jac[i][j] = Am; 
 			top_flux[i][j] = Ap * Ui + Am * Uii; 
 		}
 	}
 } 
-
 void Solver::solve_left_line_inviscid() {
 
 	int i = 0; 
@@ -738,7 +742,7 @@ void Solver::solve_left_line_inviscid() {
 	j = 0; 
 	El = inviscid_boundary_2D_E(BoundaryType.left, U[i + 1][j + 1], -1 * grid.iNorms(i, j));  
 
-	B = top_minus_jac[i][j] * (grid.jArea(i, j + 1)); 
+	B = top_minus_jac[i][j] * grid.jArea(i, j + 1); 
 
 	A = grid.Volume(i, j) / dt * identity(4) 
 		+ (left_plus_jac[i][j] + El * left_minus_jac[i][j]) * grid.iArea(i, j)		// Left 
@@ -796,7 +800,7 @@ void Solver::solve_middle_line_inviscid(const int i) {
 		+ bot_flux[i][j] * grid.jArea(i, j)
 		+ top_flux[i][j] * grid.jArea(i, j + 1)
 		+ right_minus_jac[i][j] * grid.iArea(i + 1, j) * dU_old[i + 1][j]
-		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][j]);
+		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]);
 
 	alpha = A;
 	v[Ny - 1] = F / alpha;
@@ -820,7 +824,7 @@ void Solver::solve_middle_line_inviscid(const int i) {
 			+ bot_flux[i][j] * grid.jArea(i, j)
 			+ top_flux[i][j] * grid.jArea(i, j + 1)
 			+ right_minus_jac[i][j] * grid.iArea(i + 1, j) * dU_old[i + 1][j]
-			+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][j]);
+			+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]);
 
 
 
@@ -845,8 +849,8 @@ void Solver::solve_middle_line_inviscid(const int i) {
 		+ right_flux[i][j] * grid.iArea(i + 1, j)
 		+ bot_flux[i][j] * grid.jArea(i, j)
 		+ top_flux[i][j] * grid.jArea(i, j + 1)
-		+ right_minus_jac[i][j] * grid.iArea(i + 1, j) * dU_old[i + 1][0] 
-		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][0]);  
+		+ right_minus_jac[i][j] * grid.iArea(i + 1, j) * dU_old[i + 1][j] 
+		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]);   
 
 
 	alpha = A - B * g[1];
@@ -892,7 +896,7 @@ void Solver::solve_right_line_inviscid() {
 		+ right_flux[i][j] * grid.iArea(i + 1, j)
 		+ bot_flux[i][j] * grid.jArea(i, j)
 		+ top_flux[i][j] * grid.jArea(i, j + 1)
-		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][j]); 
+		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]); 
 
 	alpha = A;
 	v[Ny - 1] = F / alpha;
@@ -917,7 +921,7 @@ void Solver::solve_right_line_inviscid() {
 			+ right_flux[i][j] * grid.iArea(i + 1, j)
 			+ bot_flux[i][j] * grid.jArea(i, j)
 			+ top_flux[i][j] * grid.jArea(i, j + 1)
-			+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][j]);
+			+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]);
 
 
 
@@ -943,7 +947,7 @@ void Solver::solve_right_line_inviscid() {
 		+ right_flux[i][j] * grid.iArea(i + 1, j)
 		+ bot_flux[i][j] * grid.jArea(i, j) 
 		+ top_flux[i][j] * grid.jArea(i, j + 1) 
-		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i][j]);  
+		+ left_minus_jac[i][j] * grid.iArea(i, j) * dU_old[i - 1][j]);  
 
 
 	alpha = A - B * g[1];
@@ -1045,7 +1049,7 @@ void Solver::write_residual_csv() {
 	cout << "\033[36mResidual File saved successfully as \"" << filename << "\"\033[0m" << endl;
 
 }
-void Solver::write_2d_csv(const string& filename, inlet_conditions& INLET) {  
+void Solver::write_2d_csv(const string& filename) {  
 
 	double a, density, pressure, u_velocity, v_velocity, Mach, Temperature;
 

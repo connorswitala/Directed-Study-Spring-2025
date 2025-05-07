@@ -77,7 +77,7 @@ struct inlet_conditions {
 
 // This struct contains the states for inviscid Jacobian computation
 struct Inviscid_State {
-	double rho, u, v, p, a, k, uprime, pp, h0; 
+	double rho, u, v, a, p, uprime;  
 };
 
 // This struct contains the states for viscous Jacobians computation
@@ -88,17 +88,13 @@ struct Viscous_State {
 // This function computes the states for the inviscid Jacobians
 inline Inviscid_State compute_inviscid_state(const Vector& U, double nx, double ny) {
 	Inviscid_State S;
-	double e = computeInternalEnergy(U); 
 
 	S.rho = U[0];
-	S.u = U[1] / S.rho; 
-	S.v = U[2] / S.rho;  
-	S.p = computePressure(U); 
-	S.a = sqrt(gamma * S.p / S.rho); 
-	S.k = 1.0 / (S.a * S.a); 
+	S.u = U[1] / U[0]; 
+	S.v = U[2] / U[0];  
+	S.p = computePressure(U);
+	S.a = sqrt(gamma * S.p / U[0]); 
 	S.uprime = S.u * nx + S.v * ny;
-	S.pp = (gamma - 1.0) * e;  
-	S.h0 = U[3] / S.rho;  
 
 	return S; 
 }
@@ -166,7 +162,7 @@ public:
 
 	void compute_inner_residual();
 	void compute_outer_residual(); 
-	void write_2d_csv(const string& filename, inlet_conditions& INLET); 
+	void write_2d_csv(const string& filename); 
 	void write_1d_csv(const string& filename);
 	void write_residual_csv(); 
 	
