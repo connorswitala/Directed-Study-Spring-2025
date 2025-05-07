@@ -327,7 +327,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1 - 1/(2 * (g * g * dp * dp + 1));
+			weight = 1;
 
 			Up = weight * Ui + (1 - weight) * Uii; 
 			Um = (1 - weight) * Ui + weight * Uii; 
@@ -415,7 +415,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1 - 1 / (2 * (g * g * dp * dp + 1));
+			weight = 1;
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
@@ -502,7 +502,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1 - 1 / (2 * (g * g * dp * dp + 1));
+			weight = 1;
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
@@ -589,7 +589,7 @@ void Solver::compute_inviscid_jacobians() {
 			pi = computePressure(Ui);
 			pii = computePressure(Uii);
 			dp = fabs(pii - pi) / min(pii, pi);
-			weight = 1 - 1 / (2 * (g * g * dp * dp + 1)); 
+			weight = 1; 
 			Up = weight * Ui + (1 - weight) * Uii;
 			Um = (1 - weight) * Ui + weight * Uii;
 			Si = compute_inviscid_state(Up, nx, ny);
