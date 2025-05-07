@@ -121,23 +121,23 @@ int main() {
 	double CFL = 1.0; 
 	double Wall_Temp = 300;  
 
-	INLET.p = 10000.0,						// Inlet Pressure (SET)
-	INLET.T = 300.0,						// Inlet Temperature (SET)
-	INLET.M = 5,							// Inlet Mach speed (SET) 
+	INLET.p = 75.9448,						// Inlet Pressure (SET)
+	INLET.T = 270.65,						// Inlet Temperature (SET)
+	INLET.M = 12,							// Inlet Mach speed (SET) 
 	INLET.a = sqrt(gamma * R * INLET.T),	// Inlet Sound Speed
 	INLET.u = INLET.M * INLET.a,			// Inlet u-velocity
 	INLET.v = 0,							// Inlet v-velocity
-	INLET.rho = INLET.p / (R * INLET.T);	// Inlet density
+	INLET.rho = 0.000977525;	// Inlet density
 
 	int progress_update = 50;  // This number prints a status update after the number of iterations declared here. 
 	CFL = 1.0; 
-	const int Nx = 100, Ny = 50; 
+	const int Nx = 100, Ny = 100; 
 
 	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Symmetry);      
 	//RampGrid grid(Nx, Ny, 10, 10, 10, 6, 15);   
 
-	BoundaryConditions BCs(BoundaryCondition::Outlet, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);           
-	CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.001, pi / 2, 3 * pi / 2); 
+	BoundaryConditions BCs(BoundaryCondition::Symmetry, BoundaryCondition::Outlet, BoundaryCondition::Symmetry, BoundaryCondition::Inlet);            
+	CylinderGrid grid(Nx, Ny, 0.1, 0.3, 0.45, 0.001, pi / 2, pi);  
 
 	//BoundaryConditions BCs(BoundaryCondition::Inlet, BoundaryCondition::Outlet, BoundaryCondition::IsothermalWall, BoundaryCondition::Symmetry);   
 	//FlatPlateGrid grid(Nx, Ny, 1e-3, 1e-3, 5e-6);  
